@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+
+ enum Gender {
+   Male
+   Female
+   Other
+ }
+
+ enum StudentStatus {
+   active
+   inactive
+   passed_out
+ }
+
+ enum TeacherStatus {
+   active
+   inactive
+ }
+
+
+model User {
+  userid            String   @id
+  username          String
+  password          String
+  isadmin           Boolean  @default(false)
+
+  site_permissions  Json?
+  page_permissions  Json?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+
+model School {
+  school_id      String   @id
+  school_name    String
+  school_type    String
+  motto          String?
+  school_website String?
+  school_logo    String?
+  extras         Json?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campuses       Campus[]
+}
+
+
+model Campus {
+  campus_id    String   @id
+  campus_name  String
+  campus_type  String
+
+  school_id    String
+  school       School   @relation(fields: [school_id], references: [school_id], onDelete: Cascade)
+
+  extras       Json?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  classes      Class[]
+  students     Student[]
+  teachers     Teacher[]
+
+  @@index([school_id])
+}
+
+
+model Class {
+  class_id           String   @id @default(uuid())
+
+  class_name         String
+  class_short_name   String?
+  class_description  String?
+  class_room_no      String?
+  class_teacher_id   String?
+  class_has_sections Boolean   @default(false)
+  class_type         String?
+  class_stream       String?
+  class_shift        String?
+  extras             Json?
+
+  campus_id          String
+  campus             Campus   @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  sections           Section[]
+
+  @@index([campus_id])
+}
+
+
+model Section {
+  section_id         String   @id @default(uuid())
+  section_name       String
+  section_short_name String?
+  section_teacher_id String?
+  section_room_no    String?
+  extras             Json?
+
+  class_id           String
+  classRef           Class @relation(fields: [class_id], references: [class_id], onDelete: Cascade)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([class_id])
+}
+
+
+model Student {
+  student_id             String   @id @default(uuid())
+
+  student_admission_no   String
+  student_roll_no        String?
+  student_photo_url      String?
+  student_first_name     String
+  student_middle_name    String?
+  student_last_name      String?
+  student_gender         Gender
+  student_dob            DateTime
+  student_current_status StudentStatus
+  extras                 Json?
+
+  campus_id              String
+  campus                 Campus  @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([campus_id, student_admission_no])
+  @@index([campus_id])
+  @@index([student_current_status])
+}
+
+
+model Teacher {
+  teacher_id             String   @id @default(uuid())
+  teacher_employee_code  String
+  teacher_first_name     String
+  teacher_middle_name    String?
+  teacher_last_name      String
+  teacher_gender         Gender
+  teacher_dob            DateTime
+  teacher_photo_url      String?
+  teacher_email          String   @unique
+  teacher_phone          String?  @unique
+  teacher_status         TeacherStatus
+  extras                 Json?
+
+  campus_id              String
+  campus                 Campus   @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([campus_id, teacher_employee_code])
+  @@index([campus_id])
+}
