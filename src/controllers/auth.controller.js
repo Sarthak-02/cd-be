@@ -26,10 +26,10 @@ export async function loginController(req, reply) {
   // 5. Set cookie
   reply.setCookie("token", token, {
     httpOnly: true,
-    secure: false,
-    sameSite: "lax",
+    secure: true,        // 🔥 Required for HTTPS
+    sameSite: "none",    // 🔥 Required for cross-site cookies
     path: "/",
-    maxAge: 86400,
+    maxAge: 86400
   });
 
   // Remove password before sending

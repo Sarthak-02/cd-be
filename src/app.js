@@ -21,10 +21,11 @@ await fastify.register(cookiePlugin)
 await fastify.register(jwtPlugin)
 
 await fastify.register(cors, {
-    origin: process.env.FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true
-  })
+  origin: process.env.FRONTEND_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+});
 
 
 await fastify.register(authHook)
