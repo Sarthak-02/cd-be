@@ -8,7 +8,7 @@ const PORT = Number(process.env.PORT) || 5001;
 
 const start = async () => {
   try {
-    await app.listen({ port: PORT, host: 'localhost' });
+    await app.listen({ port: PORT, host: "0.0.0.0" });
   } catch (err) {
     console.error("MYSQL ERROR:", err);
     process.exit(1);
