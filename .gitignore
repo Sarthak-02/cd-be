@@ -24,7 +24,7 @@ debug.log
 
 # Prisma
 prisma/migrations/
-src/generated/prisma/
+src/prisma/generated/
 *.db
 
 # OS files
