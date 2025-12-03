@@ -1,20 +1,20 @@
 import {  getUser, validateUser } from "../db/user.db.js";
 import bcrypt from "bcrypt"
+import { clearCache, getUserDetails } from "../utils/cache/user.cache.js";
 
 export async function loginController(req, reply) {
   const { userid, password } = req.body;
 
   // 1. Find user
-  const user = await getUser(userid);
+  const user = await getUserDetails(userid)
 
   // 2. If user not found
   if (!user) {
     return reply.code(401).send({ error: "Invalid credentials" });
   }
 
-  console.log(password,user.password)
   // 3. Validate password
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  const isPasswordValid = await bcrypt.compare(password, user?.password);
 
   if (!isPasswordValid) {
     return reply.code(401).send({ error: "Invalid credentials" });
@@ -34,7 +34,7 @@ export async function loginController(req, reply) {
 
   // Remove password before sending
   delete user.password;
-
+  
   reply.send({
     success: true,
     message: "Logged in",
@@ -43,6 +43,10 @@ export async function loginController(req, reply) {
 }
   
 export const logoutController = async (req, reply) => {
+
+    //clear the cache
+    clearCache()
+
     // Clear the cookie
     reply.clearCookie("token", {
       path: "/",       

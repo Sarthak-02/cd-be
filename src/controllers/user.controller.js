@@ -25,8 +25,8 @@ export async function user_put(req, reply) {
     try {
         const data = req.body
 
-        //if password is blank , don't update it
-        if (data['password']){
+        //if req doesn't have password or password is blank , don't update it
+        if (data.hasOwnProperty('password') && data['password'].trim("")){
             const passwordHash = await bcrypt.hash(data?.password, 10);
             data['password'] = passwordHash
         }else{
@@ -49,7 +49,7 @@ export async function user_put(req, reply) {
 export async function user_get(req, reply) {
     try {
         const { userid } = req.query
-        const user = await getUser(userid)
+        const user = await getUser(userid,{password:true})
         reply.send({ success: true, message: "fetched user details", data: user });
     }
     catch (err) {

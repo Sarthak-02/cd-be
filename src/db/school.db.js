@@ -35,9 +35,9 @@ export async function getSchools(all_school_id) {
 }
 
 
-export async function getAllSchools() {
+export async function getAllSchools(omit={}) {
   try {
-    return await fastify.prisma.school.findMany({});
+    return await fastify.prisma.school.findMany({omit});
   } catch (err) {
     console.log(err);
     return null;

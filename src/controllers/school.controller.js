@@ -48,7 +48,8 @@ import {
   
   export async function school_all_get(req, reply) {
     try {
-      const schools = await getAllSchools();
+      const schools = await getAllSchools({extras:true});
+
       reply.send({ success: true, message: "Fetched all Schools", data: schools });
     } catch (err) {
       console.log(err);

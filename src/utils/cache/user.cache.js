@@ -5,7 +5,7 @@ import { getSchools } from "../../db/school.db.js";
 
 const userCache = new LRUCache({
     max: 2000,
-    ttl: 1000 * 60 * 3 // 30 minutes
+    ttl: 1000 * 60 * 1 // 30 minutes
 });
 
 export async function getUserDetails(userId) {
@@ -59,6 +59,12 @@ export async function getUserDetails(userId) {
 
 }
 
-
-// await firestore.collection("users").doc(userId).delete();
-// userCache.delete(userId);
+export async function clearCache() {
+    try {
+        await firestore.collection("users").doc(userId).delete();
+        userCache.delete(userId);
+    }
+    catch (err) {
+        console.log(err)
+    }
+}

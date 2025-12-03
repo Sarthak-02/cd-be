@@ -13,11 +13,12 @@ export async function createUser(data){
     return true
 }
 
-export async function getUser(userid) {
+export async function getUser(userid,omit={}) {
     let user = null;
     try {
       user = await fastify.prisma.user.findUnique({
         where: { userid },
+        omit
       });
     } catch (err) {
       console.log(err);
