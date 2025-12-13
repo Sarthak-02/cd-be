@@ -48,7 +48,8 @@ import {
   
   export async function campus_all_get(req, reply) {
     try {
-      const campuses = await getAllCampuses();
+      let campuses = await getAllCampuses({extras:true});
+      campuses =  campuses.map((campus) => ({...campus,label:campus.campus_name , value:campus.campus_id}))
       reply.send({ success: true, message: "Fetched all Campuses", data: campuses });
     } catch (err) {
       console.log(err);

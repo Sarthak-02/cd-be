@@ -48,7 +48,16 @@ import {
   
   export async function student_all_get(req, reply) {
     try {
-      const students = await getAllStudents();
+      const {campus_id} = req.query
+      let students = []
+      if(campus_id){
+        students = await getAllStudents({extras:true},{campus_id});
+      }else{
+        students = await getAllStudents({extras:true});
+      }
+      
+      students = students?.map((student) => ({...student , label:student.student_name , value: student.student_id}))
+      
       reply.send({ success: true, message: "Fetched all Students", data: students });
     } catch (err) {
       console.log(err);

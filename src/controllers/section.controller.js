@@ -3,7 +3,8 @@ import {
     getSection, 
     getAllSections, 
     updateSection, 
-    deleteSection 
+    deleteSection, 
+    getSectionsByCampus
   } from "../db/section.db.js";
   
   export async function section_post(req, reply) {
@@ -48,7 +49,18 @@ import {
   
   export async function section_all_get(req, reply) {
     try {
-      const sections = await getAllSections();
+
+      const {campus_id} = req.query
+
+      let sections = []
+      if (campus_id){
+        sections = await getSectionsByCampus(campus_id);
+      }else{
+        sections = await getAllSections({extras:true});
+      }
+
+      sections = sections?.map((section) => ({...section,label:section.section_name , value: section.section_id}))
+      
       reply.send({ success: true, message: "Fetched all Sections", data: sections });
     } catch (err) {
       console.log(err);

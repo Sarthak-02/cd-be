@@ -21,9 +21,9 @@ export async function getTeacher(teacher_id) {
   }
 }
 
-export async function getAllTeachers() {
+export async function getAllTeachers(omit,filters) {
   try {
-    return await fastify.prisma.teacher.findMany({});
+    return await fastify.prisma.teacher.findMany({omit,where:filters});
   } catch (err) {
     console.log(err);
     return null;

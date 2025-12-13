@@ -29,3 +29,13 @@ export const sectionGetRequestSchema = {
         }
     }
 }
+
+export const sectionByCampusGetRequestSchema = {
+    tags: ["Section"],
+    querystring: {
+        type: "object",
+        properties: {
+            campus_id: { type: "string" }
+        }
+    }
+}

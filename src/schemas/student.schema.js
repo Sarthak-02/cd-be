@@ -40,3 +40,14 @@ export const studentGetRequestSchema = {
         }
     }
 }
+
+export const studentByCampusGetRequestSchema = {
+    tags: ["Student"],
+    querystring: {
+        type: "object",
+        required: ["student_id"],
+        properties: {
+            campus_id: { type: "string" }
+        }
+    }
+}

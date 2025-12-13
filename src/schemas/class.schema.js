@@ -24,6 +24,15 @@ export const classCreateRequestSchema = {
     }
 }
 
+export const classByCampusGetRequestSchema = {
+    tags: ["Class"],
+    querystring: {
+        type: "object",
+        properties: {
+            campus_id: { type: "string" }
+        }
+    }
+}
 
 export const classGetRequestSchema = {
     tags: ["Class"],

@@ -21,9 +21,9 @@ export async function getCampus(campus_id) {
   }
 }
 
-export async function getAllCampuses() {
+export async function getAllCampuses(omit) {
   try {
-    return await fastify.prisma.campus.findMany({});
+    return await fastify.prisma.campus.findMany({omit});
   } catch (err) {
     console.log(err);
     return null;

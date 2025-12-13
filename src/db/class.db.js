@@ -21,9 +21,9 @@ export async function getClass(class_id) {
   }
 }
 
-export async function getAllClasses() {
+export async function getAllClasses(omit={},filter={}) {
   try {
-    return await fastify.prisma.class.findMany({});
+    return await fastify.prisma.class.findMany({omit , where :filter});
   } catch (err) {
     console.log(err);
     return null;

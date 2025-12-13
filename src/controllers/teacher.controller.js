@@ -48,7 +48,17 @@ import {
   
   export async function teacher_all_get(req, reply) {
     try {
-      const teachers = await getAllTeachers();
+
+      const {campus_id} = req.query;
+      let teachers = []
+      if(campus_id){
+        teachers = await getAllTeachers({extras:true},{campus_id});
+      }else{
+        teachers = await getAllTeachers({extras:true})
+      }
+
+      teachers =  teachers?.map((teacher) => ({...teacher,label:`${teacher.teacher_first_name} ${teacher.teacher_middle_name || ""} ${teacher.teacher_last_name }` ,value:teacher.teacher_id}))
+       
       reply.send({ success: true, message: "Fetched all Teachers", data: teachers });
     } catch (err) {
       console.log(err);

@@ -44,3 +44,13 @@ export const teacherGetRequestSchema = {
         }
     }
 }
+
+export const teacherByCampusGetRequestSchema = {
+    tags: ["Teacher"],
+    querystring: {
+        type: "object",
+        properties: {
+            campus_id: { type: "string" }
+        }
+    }
+}

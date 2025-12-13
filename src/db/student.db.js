@@ -21,9 +21,9 @@ export async function getStudent(student_id) {
   }
 }
 
-export async function getAllStudents() {
+export async function getAllStudents(omit={},filters={}) {
   try {
-    return await fastify.prisma.student.findMany({});
+    return await fastify.prisma.student.findMany({omit,where:filters});
   } catch (err) {
     console.log(err);
     return null;

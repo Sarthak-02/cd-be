@@ -21,14 +21,33 @@ export async function getSection(section_id) {
   }
 }
 
-export async function getAllSections() {
+export async function getAllSections(omit={},filter={}) {
   try {
-    return await fastify.prisma.section.findMany({});
+    return await fastify.prisma.section.findMany({omit,where:{}});
   } catch (err) {
     console.log(err);
     return null;
   }
 }
+
+export async function getSectionsByCampus(campus_id) {
+  try {
+    return await fastify.prisma.section.findMany({
+      where: {
+        classRef: {
+          campus_id,
+        },
+      },
+      include: {
+        classRef: true, // optional
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 
 export async function updateSection(data) {
   try {
