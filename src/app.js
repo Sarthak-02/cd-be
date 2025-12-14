@@ -10,6 +10,7 @@ import prismaPlugin from './plugins/prisma.js'
 
 
 import {authRoutes ,userRoutes , schoolRoutes,campusRoutes,classRoutes,sectionRoutes,teacherRoutes, studentRoutes} from './routes/index.js'
+import { uploadRoutes } from './routes/upload.route.js'
 
 
 dotenv.config()
@@ -42,5 +43,6 @@ await fastify.register(classRoutes)
 await fastify.register(sectionRoutes)
 await fastify.register(teacherRoutes)
 await fastify.register(studentRoutes)
+await fastify.register(uploadRoutes)
 
 export default fastify

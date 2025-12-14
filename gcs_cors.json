@@ -1,0 +1,12 @@
+[
+    {
+      "origin": [
+        "http://localhost:5173",
+        "https://cd-fe-9syv.onrender.com"
+      ],
+      "method": ["GET", "PUT", "HEAD"],
+      "responseHeader": ["Content-Type"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+  
