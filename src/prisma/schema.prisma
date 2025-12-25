@@ -4,27 +4,25 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
+enum Gender {
+  Male
+  Female
+  Other
+}
 
- enum Gender {
-   Male
-   Female
-   Other
- }
+enum StudentStatus {
+  active
+  inactive
+  passed_out
+}
 
- enum StudentStatus {
-   active
-   inactive
-   passed_out
- }
-
- enum TeacherStatus {
-   active
-   inactive
- }
-
+enum TeacherStatus {
+  active
+  inactive
+}
 
 model User {
   userid            String   @id
@@ -38,7 +36,6 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
-
 
 model School {
   school_id      String   @id
@@ -54,7 +51,6 @@ model School {
 
   campuses       Campus[]
 }
-
 
 model Campus {
   campus_id    String   @id
@@ -76,7 +72,6 @@ model Campus {
   @@index([school_id])
 }
 
-
 model Class {
   class_id           String   @id @default(uuid())
 
@@ -85,7 +80,7 @@ model Class {
   class_description  String?
   class_room_no      String?
   class_teacher_id   String?
-  class_has_sections Boolean   @default(false)
+  class_has_sections Boolean  @default(false)
   class_type         String?
   class_stream       String?
   class_shift        String?
@@ -102,7 +97,6 @@ model Class {
   @@index([campus_id])
 }
 
-
 model Section {
   section_id         String   @id @default(uuid())
   section_name       String
@@ -112,7 +106,7 @@ model Section {
   extras             Json?
 
   class_id           String
-  classRef           Class @relation(fields: [class_id], references: [class_id], onDelete: Cascade)
+  classRef           Class    @relation(fields: [class_id], references: [class_id], onDelete: Cascade)
 
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -120,9 +114,8 @@ model Section {
   @@index([class_id])
 }
 
-
 model Student {
-  student_id             String   @id @default(uuid())
+  student_id             String        @id @default(uuid())
 
   student_admission_no   String
   student_roll_no        String?
@@ -136,19 +129,18 @@ model Student {
   extras                 Json?
 
   campus_id              String
-  campus                 Campus  @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+  campus                 Campus        @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
 }
 
-
 model Teacher {
-  teacher_id             String   @id @default(uuid())
+  teacher_id             String        @id @default(uuid())
   teacher_employee_code  String
   teacher_first_name     String
   teacher_middle_name    String?
@@ -156,16 +148,16 @@ model Teacher {
   teacher_gender         Gender
   teacher_dob            DateTime
   teacher_photo_url      String?
-  teacher_email          String   @unique
-  teacher_phone          String?  @unique
+  teacher_email          String        @unique
+  teacher_phone          String?       @unique
   teacher_status         TeacherStatus
   extras                 Json?
 
   campus_id              String
-  campus                 Campus   @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+  campus                 Campus        @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
