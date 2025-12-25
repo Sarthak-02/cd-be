@@ -5,7 +5,7 @@ import {
   getAllClasses,
   updateClass,
   deleteClass
-} from "../db/class.db.js";
+} from "../../db/class.db.js";
 
 export async function class_post(req, reply) {
   try {

@@ -1,8 +1,8 @@
-import fastify from "../app.js";
+import {prisma} from "../prisma/prisma.js"
 
 export async function createClass(data) {
   try {
-    await fastify.prisma.class.create({ data });
+    await prisma.class.create({ data });
     return true;
   } catch (err) {
     console.log(err);
@@ -12,7 +12,7 @@ export async function createClass(data) {
 
 export async function getClass(class_id) {
   try {
-    return await fastify.prisma.class.findUnique({
+    return await prisma.class.findUnique({
       where: { class_id }
     });
   } catch (err) {
@@ -23,7 +23,7 @@ export async function getClass(class_id) {
 
 export async function getAllClasses(omit={},filter={}) {
   try {
-    return await fastify.prisma.class.findMany({omit , where :filter});
+    return await prisma.class.findMany({omit , where :filter});
   } catch (err) {
     console.log(err);
     return null;
@@ -32,7 +32,7 @@ export async function getAllClasses(omit={},filter={}) {
 
 export async function updateClass(data) {
   try {
-    return await fastify.prisma.class.update({
+    return await prisma.class.update({
       where: { class_id: data.class_id },
       data,
     });
@@ -44,7 +44,7 @@ export async function updateClass(data) {
 
 export async function deleteClass(class_id) {
   try {
-    await fastify.prisma.class.delete({
+    await prisma.class.delete({
       where: { class_id },
     });
     return true;

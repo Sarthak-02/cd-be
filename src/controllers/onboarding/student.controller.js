@@ -4,7 +4,7 @@ import {
     getAllStudents, 
     updateStudent, 
     deleteStudent 
-  } from "../db/student.db.js";
+  } from "../../db/student.db.js";
   
   export async function student_post(req, reply) {
     try {

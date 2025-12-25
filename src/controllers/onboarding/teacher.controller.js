@@ -4,7 +4,7 @@ import {
     getAllTeachers, 
     updateTeacher, 
     deleteTeacher 
-  } from "../db/teacher.db.js";
+  } from "../../db/teacher.db.js";
   
   export async function teacher_post(req, reply) {
     try {

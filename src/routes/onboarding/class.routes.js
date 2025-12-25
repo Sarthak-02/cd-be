@@ -1,6 +1,6 @@
-import {class_post,class_put,class_get,class_all_get,class_delete} from '../controllers/class.controller.js'
+import {class_post,class_put,class_get,class_all_get,class_delete} from '../../controllers/onboarding/class.controller.js'
 
-import { classCreateRequestSchema , classGetRequestSchema ,classByCampusGetRequestSchema } from '../schemas/class.schema.js';
+import { classCreateRequestSchema , classGetRequestSchema ,classByCampusGetRequestSchema } from '../../schemas/onboarding/class.schema.js';
 // --- Class Options ---
 const classCreateOpts = {
     schema: {

@@ -1,5 +1,5 @@
-import {teacher_post,teacher_put,teacher_get,teacher_all_get,teacher_delete} from '../controllers/teacher.controller.js'
-import { teacherCreateRequestSchema , teacherGetRequestSchema,teacherByCampusGetRequestSchema} from '../schemas/teacher.schema.js';
+import {teacher_post,teacher_put,teacher_get,teacher_all_get,teacher_delete} from '../../controllers/onboarding/teacher.controller.js'
+import { teacherCreateRequestSchema , teacherGetRequestSchema,teacherByCampusGetRequestSchema} from '../../schemas/onboarding/teacher.schema.js';
 
 // --- Teacher Options ---
 const teacherCreateOpts = {

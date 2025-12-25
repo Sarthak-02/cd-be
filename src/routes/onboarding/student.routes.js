@@ -1,5 +1,5 @@
-import {student_post,student_put,student_get,student_all_get,student_delete} from '../controllers/student.controller.js'
-import { studentCreateRequestSchema , studentGetRequestSchema ,studentByCampusGetRequestSchema } from '../schemas/student.schema.js';
+import {student_post,student_put,student_get,student_all_get,student_delete} from '../../controllers/onboarding/student.controller.js'
+import { studentCreateRequestSchema , studentGetRequestSchema ,studentByCampusGetRequestSchema } from '../../schemas/onboarding/student.schema.js';
 
 // --- Student Options ---
 const studentCreateOpts = {

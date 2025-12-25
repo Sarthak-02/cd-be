@@ -1,6 +1,6 @@
-import {  getUser, validateUser } from "../db/user.db.js";
+import {  getUser, validateUser } from "../../db/user.db.js";
 import bcrypt from "bcrypt"
-import { clearCache, getUserDetails } from "../utils/cache/user.cache.js";
+import { clearCache, getUserDetails } from "../../utils/cache/user.cache.js";
 
 export async function loginController(req, reply) {
   const { userid, password } = req.body;

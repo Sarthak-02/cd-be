@@ -1,4 +1,4 @@
-import { generateImageUploadSignedUrl } from "../services/gcsSignedUrl.js";
+import { generateImageUploadSignedUrl } from "../../services/gcsSignedUrl.js";
 
 export async function generateUploadImageUrlController(request, reply) {
   try {

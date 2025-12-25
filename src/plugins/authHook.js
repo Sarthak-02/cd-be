@@ -3,9 +3,8 @@ import fp from "fastify-plugin";
 
 const authHook = async (app) => {
   app.addHook("preHandler", async (req, reply) => {
-    
     // Skip auth for these routes
-    if (req.url.startsWith("/login")) {
+    if (req.url.includes("/login")) {
       return;
     }
 

@@ -6,6 +6,7 @@ import classRoutes from "./class.routes.js";
 import sectionRoutes from "./section.routes.js";
 import studentRoutes from "./student.routes.js";
 import teacherRoutes from "./teacher.routes.js";
+import { uploadRoutes } from "./upload.route.js";
 
 export {
     authRoutes,
@@ -15,5 +16,6 @@ export {
     classRoutes,
     sectionRoutes,
     studentRoutes,
-    teacherRoutes
+    teacherRoutes,
+    uploadRoutes
 }

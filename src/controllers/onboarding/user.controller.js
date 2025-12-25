@@ -1,4 +1,4 @@
-import { createUser, getAllUsers, getUser, updateUser ,deleteUser } from "../db/user.db.js"
+import { createUser, getAllUsers, getUser, updateUser ,deleteUser } from "../../db/user.db.js"
 import bcrypt from 'bcrypt'
 
 export async function user_post(req, reply) {

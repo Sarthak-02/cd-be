@@ -1,8 +1,8 @@
-import fastify from "../app.js";
+import {prisma} from "../prisma/prisma.js"
 
 export async function createTeacher(data) {
   try {
-    await fastify.prisma.teacher.create({ data });
+    await prisma.teacher.create({ data });
     return true;
   } catch (err) {
     console.log(err);
@@ -12,7 +12,7 @@ export async function createTeacher(data) {
 
 export async function getTeacher(teacher_id) {
   try {
-    return await fastify.prisma.teacher.findUnique({
+    return await prisma.teacher.findUnique({
       where: { teacher_id }
     });
   } catch (err) {
@@ -23,7 +23,7 @@ export async function getTeacher(teacher_id) {
 
 export async function getAllTeachers(omit,filters) {
   try {
-    return await fastify.prisma.teacher.findMany({omit,where:filters});
+    return await prisma.teacher.findMany({omit,where:filters});
   } catch (err) {
     console.log(err);
     return null;
@@ -32,7 +32,7 @@ export async function getAllTeachers(omit,filters) {
 
 export async function updateTeacher(data) {
   try {
-    return await fastify.prisma.teacher.update({
+    return await prisma.teacher.update({
       where: { teacher_id: data.teacher_id },
       data,
     });
@@ -44,7 +44,7 @@ export async function updateTeacher(data) {
 
 export async function deleteTeacher(teacher_id) {
   try {
-    await fastify.prisma.teacher.delete({
+    await prisma.teacher.delete({
       where: { teacher_id },
     });
     return true;

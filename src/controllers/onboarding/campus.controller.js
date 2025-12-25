@@ -4,7 +4,7 @@ import {
     getAllCampuses, 
     updateCampus, 
     deleteCampus 
-  } from "../db/campus.db.js";
+  } from "../../db/campus.db.js";
   
   export async function campus_post(req, reply) {
     try {

@@ -1,6 +1,6 @@
-import {section_post,section_put,section_get,section_all_get,section_delete} from '../controllers/section.controller.js'
+import {section_post,section_put,section_get,section_all_get,section_delete} from '../../controllers/onboarding/section.controller.js'
 
-import { sectionCreateRequestSchema , sectionGetRequestSchema ,sectionByCampusGetRequestSchema } from '../schemas/section.schema.js';
+import { sectionCreateRequestSchema , sectionGetRequestSchema ,sectionByCampusGetRequestSchema } from '../../schemas/onboarding/section.schema.js';
 // --- Section Options ---
 const sectionCreateOpts = {
     schema: {

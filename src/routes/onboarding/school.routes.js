@@ -1,5 +1,5 @@
-import {school_post,school_put,school_get,school_all_get,school_delete} from '../controllers/school.controller.js'
-import { schoolCreateRequestSchema , schoolGetRequestSchema } from '../schemas/school.schema.js';
+import {school_post,school_put,school_get,school_all_get,school_delete} from '../../controllers/onboarding/school.controller.js'
+import { schoolCreateRequestSchema , schoolGetRequestSchema } from '../../schemas/onboarding/school.schema.js';
 // --- School Options ---
 const schoolCreateOpts = {
     schema: {

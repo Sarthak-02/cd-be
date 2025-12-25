@@ -4,7 +4,7 @@ import {
     getAllSchools, 
     updateSchool, 
     deleteSchool 
-  } from "../db/school.db.js";
+  } from "../../db/school.db.js";
   
   export async function school_post(req, reply) {
     try {

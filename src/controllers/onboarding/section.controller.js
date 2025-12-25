@@ -5,7 +5,7 @@ import {
     updateSection, 
     deleteSection, 
     getSectionsByCampus
-  } from "../db/section.db.js";
+  } from "../../db/section.db.js";
   
   export async function section_post(req, reply) {
     try {

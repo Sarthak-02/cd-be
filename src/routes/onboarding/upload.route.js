@@ -1,5 +1,5 @@
-import { generateUploadImageUrlController } from "../controllers/upload.controller.js";
-import { generateUploadUrlSchema } from "../schemas/upload.schema.js";
+import { generateUploadImageUrlController } from "../../controllers/onboarding/upload.controller.js";
+import { generateUploadUrlSchema } from "../../schemas/onboarding/upload.schema.js";
 
 const uploadOpts = {
     schema:{

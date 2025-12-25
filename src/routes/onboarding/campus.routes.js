@@ -1,5 +1,5 @@
-import {campus_post,campus_put,campus_get,campus_all_get,campus_delete} from '../controllers/campus.controller.js'
-import { campusCreateRequestSchema , campusGetRequestSchema } from '../schemas/campus.schema.js';
+import {campus_post,campus_put,campus_get,campus_all_get,campus_delete} from '../../controllers/onboarding/campus.controller.js'
+import { campusCreateRequestSchema , campusGetRequestSchema } from '../../schemas/onboarding/campus.schema.js';
 
 // --- Campus Options ---
 const campusCreateOpts = {

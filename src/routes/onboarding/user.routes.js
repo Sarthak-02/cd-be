@@ -1,5 +1,5 @@
-import { user_all_get, user_get, user_delete, user_post, user_put } from "../controllers/user.controller.js";
-import { userCreateRequestSchema, userGetRequestSchema, userEditRequestSchema } from "../schemas/user.schema.js";
+import { user_all_get, user_get, user_delete, user_post, user_put } from "../../controllers/onboarding/user.controller.js";
+import { userCreateRequestSchema, userGetRequestSchema, userEditRequestSchema } from "../../schemas/onboarding/user.schema.js";
 
 const userCreateOpts = {
     schema: {
