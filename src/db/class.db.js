@@ -2,11 +2,11 @@ import {prisma} from "../prisma/prisma.js"
 
 export async function createClass(data) {
   try {
-    await prisma.class.create({ data });
-    return true;
+    const createdClass = await prisma.class.create({ data });
+    return createdClass;
   } catch (err) {
-    console.log(err);
-    return false;
+    console.error(err);
+    return null;
   }
 }
 

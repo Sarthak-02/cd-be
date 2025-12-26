@@ -6,6 +6,7 @@ import {
   updateClass,
   deleteClass
 } from "../../db/class.db.js";
+import { createSection } from "../../db/section.db.js";
 
 export async function class_post(req, reply) {
   try {
@@ -13,6 +14,29 @@ export async function class_post(req, reply) {
     const result = await createClass(data);
 
     if (!result) throw new Error();
+
+    const extras = data?.extras || {}
+    const has_sections = extras?.class_has_sections ?? false
+
+    if (!has_sections) {
+      // create a default section
+      const section_payload = {
+        section_name: data?.class_name,
+        section_short_name: data?.class_short_name,
+        section_teacher_id: data?.class_teacher_id,
+        section_room_no: data?.class_room_no,
+        class_id: result.class_id,
+        extras: {
+          section_max_students: extras?.class_max_students
+        }
+      }
+
+      const section_created = await createSection(section_payload)
+
+      if (!section_created) {
+        throw new Error()
+      }
+    }
 
     reply.send({ success: true, message: "Class Created Successfully" });
   } catch (err) {
