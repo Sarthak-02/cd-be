@@ -15,7 +15,7 @@ import { createParent, createParentData } from "../../services/onboarding/studen
 
       if (!result) throw new Error("Unable to Create Student Details");
       
-      const parentResult = await createParent(createParentData(data?.extras || {}))
+      const parentResult = await createParent(createParentData({...data?.extras,student_id:result.student_id} || {}))
 
       if (!parentResult) throw new Error("Unable to create Parent Details")
       

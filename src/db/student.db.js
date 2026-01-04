@@ -2,8 +2,8 @@ import {prisma} from "../prisma/prisma.js"
 
 export async function createStudent(data) {
   try {
-    await prisma.student.create({ data });
-    return true;
+    const result = await prisma.student.create({ data });
+    return result;
   } catch (err) {
     console.log(err);
     return false;

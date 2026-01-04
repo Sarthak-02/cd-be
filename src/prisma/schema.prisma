@@ -64,6 +64,13 @@ enum BroadcastStatus{
   SENT
 }
 
+enum TargetType{
+  SCHOOL
+  CLASS
+  SECTION
+  STUDENT
+}
+
 model User {
   userid            String   @id
   username          String

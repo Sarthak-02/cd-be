@@ -1,7 +1,7 @@
 import { prisma } from "../prisma/prisma.js";
 
 
-export async function createParent(data) {
+export async function createParentRow(data) {
     return prisma.parent.create({
         data,
     });
