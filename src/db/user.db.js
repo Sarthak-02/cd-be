@@ -1,9 +1,9 @@
-import fastify from "../app.js"
+import {prisma} from "../prisma/prisma.js"
 
 export async function createUser(data){
     let newUser = null
     try{
-        newUser = await fastify.prisma.user.create({data})
+        newUser = await prisma.user.create({data})
     }
     catch(err){
         console.log(err)
@@ -16,7 +16,7 @@ export async function createUser(data){
 export async function getUser(userid,omit={}) {
     let user = null;
     try {
-      user = await fastify.prisma.user.findUnique({
+      user = await prisma.user.findUnique({
         where: { userid },
         omit
       });
@@ -30,7 +30,7 @@ export async function getUser(userid,omit={}) {
 export async function getAllUsers() {
     let users = null
     try{
-        users = await fastify.prisma.user.findMany({
+        users = await prisma.user.findMany({
           omit: {
             password: true,
           },
@@ -46,7 +46,7 @@ export async function getAllUsers() {
 export async function updateUser(data) {
   let updateUser = null
     try{
-      updateUser = fastify.prisma.user.update({
+      updateUser = prisma.user.update({
             where:{
                 userid:data?.userid
             },

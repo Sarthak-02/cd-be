@@ -9,8 +9,9 @@ import prismaPlugin from './plugins/prisma.js'
 
 
 
-import {authRoutes ,userRoutes , schoolRoutes,campusRoutes,classRoutes,sectionRoutes,teacherRoutes, studentRoutes} from './routes/index.js'
-import { uploadRoutes } from './routes/upload.route.js'
+import {authRoutes ,userRoutes , schoolRoutes,campusRoutes,classRoutes,sectionRoutes,teacherRoutes, studentRoutes} from './routes/onboarding/index.js'
+import { uploadRoutes } from './routes/onboarding/upload.route.js'
+import attendanceRoutes from './routes/app/attendance.route.js'
 
 
 dotenv.config()
@@ -35,14 +36,19 @@ await fastify.register(authHook)
 await fastify.register(prismaPlugin)
 
 // // Register routes
-await fastify.register(authRoutes)
-await fastify.register(userRoutes)
-await fastify.register(schoolRoutes)
-await fastify.register(campusRoutes)
-await fastify.register(classRoutes)
-await fastify.register(sectionRoutes)
-await fastify.register(teacherRoutes)
-await fastify.register(studentRoutes)
-await fastify.register(uploadRoutes)
+await fastify.register(async function (onboardingRoutes) {
+  await onboardingRoutes.register(authRoutes)
+  await onboardingRoutes.register(userRoutes)
+  await onboardingRoutes.register(schoolRoutes)
+  await onboardingRoutes.register(campusRoutes)
+  await onboardingRoutes.register(classRoutes)
+  await onboardingRoutes.register(sectionRoutes)
+  await onboardingRoutes.register(teacherRoutes)
+  await onboardingRoutes.register(studentRoutes)
+  await onboardingRoutes.register(uploadRoutes)
+}, { prefix: '/onboarding' })
+
+
+
 
 export default fastify

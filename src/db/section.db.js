@@ -1,8 +1,8 @@
-import fastify from "../app.js";
+import {prisma} from "../prisma/prisma.js"
 
 export async function createSection(data) {
   try {
-    await fastify.prisma.section.create({ data });
+    await prisma.section.create({ data });
     return true;
   } catch (err) {
     console.log(err);
@@ -12,7 +12,7 @@ export async function createSection(data) {
 
 export async function getSection(section_id) {
   try {
-    return await fastify.prisma.section.findUnique({
+    return await prisma.section.findUnique({
       where: { section_id }
     });
   } catch (err) {
@@ -23,7 +23,7 @@ export async function getSection(section_id) {
 
 export async function getAllSections(omit={},filter={}) {
   try {
-    return await fastify.prisma.section.findMany({omit,where:{}});
+    return await prisma.section.findMany({omit,where:{}});
   } catch (err) {
     console.log(err);
     return null;
@@ -32,7 +32,7 @@ export async function getAllSections(omit={},filter={}) {
 
 export async function getSectionsByCampus(campus_id) {
   try {
-    return await fastify.prisma.section.findMany({
+    return await prisma.section.findMany({
       where: {
         classRef: {
           campus_id,
@@ -51,7 +51,7 @@ export async function getSectionsByCampus(campus_id) {
 
 export async function updateSection(data) {
   try {
-    return await fastify.prisma.section.update({
+    return await prisma.section.update({
       where: { section_id: data.section_id },
       data,
     });
@@ -63,7 +63,7 @@ export async function updateSection(data) {
 
 export async function deleteSection(section_id) {
   try {
-    await fastify.prisma.section.delete({
+    await prisma.section.delete({
       where: { section_id },
     });
     return true;

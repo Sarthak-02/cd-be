@@ -1,8 +1,8 @@
-import fastify from "../app.js";
+import {prisma} from "../prisma/prisma.js"
 
 export async function createCampus(data) {
   try {
-    await fastify.prisma.campus.create({ data });
+    await prisma.campus.create({ data });
     return true;
   } catch (err) {
     console.log(err);
@@ -12,7 +12,7 @@ export async function createCampus(data) {
 
 export async function getCampus(campus_id) {
   try {
-    return await fastify.prisma.campus.findUnique({
+    return await prisma.campus.findUnique({
       where: { campus_id }
     });
   } catch (err) {
@@ -23,7 +23,7 @@ export async function getCampus(campus_id) {
 
 export async function getAllCampuses(omit) {
   try {
-    return await fastify.prisma.campus.findMany({omit});
+    return await prisma.campus.findMany({omit});
   } catch (err) {
     console.log(err);
     return null;
@@ -32,7 +32,7 @@ export async function getAllCampuses(omit) {
 
 export async function updateCampus(data) {
   try {
-    return await fastify.prisma.campus.update({
+    return await prisma.campus.update({
       where: { campus_id: data.campus_id },
       data,
     });
@@ -44,7 +44,7 @@ export async function updateCampus(data) {
 
 export async function deleteCampus(campus_id) {
   try {
-    await fastify.prisma.campus.delete({
+    await prisma.campus.delete({
       where: { campus_id },
     });
     return true;
