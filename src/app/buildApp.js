@@ -2,10 +2,10 @@ import cors from '@fastify/cors'
 import dotenv from 'dotenv'
 import Fastify from 'fastify'
 
-import authHook from '../plugins/authHook.js'
-import cookiePlugin from '../plugins/cookie.js'
-import jwtPlugin from '../plugins/jwt.js'
-import prismaPlugin from '../plugins/prisma.js'
+import authHook from '../plugins/onboarding/authHook.js'
+import cookiePlugin from '../plugins/common/cookie.js'
+import jwtPlugin from '../plugins/common/jwt.js'
+import prismaPlugin from '../plugins/common/prisma.js'
 
 dotenv.config()
 
@@ -15,7 +15,7 @@ export async function buildApp() {
     // Core plugins
     await fastify.register(cookiePlugin)
     await fastify.register(jwtPlugin)
-
+    
     await fastify.register(cors, {
         origin: process.env.FRONTEND_URL,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

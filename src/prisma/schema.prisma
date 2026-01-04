@@ -24,6 +24,46 @@ enum TeacherStatus {
   inactive
 }
 
+enum AttendanceSessionStatus {
+  DRAFT
+  NOTIFYING
+  SUBMITTED
+  LOCKED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+
+enum CampusSession {
+  MORNING
+  EVENING
+  FULL_DAY
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  APP
+}
+
+enum NotificationStatus {
+  PENDING     // created, not processed yet
+  QUEUED      // pushed to queue successfully
+  SENT        // delivered successfully
+  FAILED      // permanently failed after retries
+}
+
+enum BroadcastStatus{
+  DRAFT
+  SENT
+}
+
 model User {
   userid            String   @id
   username          String
@@ -111,6 +151,7 @@ model Section {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  attendanceSessions AttendanceSession[]
   @@index([class_id])
 }
 
@@ -134,9 +175,33 @@ model Student {
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
+  attendanceRecords      AttendanceRecord[]
+  notifications          Notification[]
+  parents                Parent[] 
+
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
+}
+
+model Parent {
+  parent_id      String   @id @default(uuid())
+
+  name           String
+  phone          String?
+  email          String?
+  relation_type  String? // Father , Mother , Guardian etc
+
+  student_id     String
+  student       Student             @relation(fields: [student_id] , references : [student_id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  notifications          Notification[]
+
+  @@index([phone])
+  @@unique([student_id, phone])
 }
 
 model Teacher {
@@ -159,6 +224,119 @@ model Teacher {
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
+  attendanceSessions     AttendanceSession[]     
+  updatedAttendance      AttendanceRecord[] @relation("AttendanceUpdatedBy")
+
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
 }
+
+model AttendanceSession {
+  id            String   @id @default(uuid())
+
+  sectionId     String
+  teacherId     String
+
+  date          DateTime @db.Date
+  campusSession CampusSession @default(FULL_DAY)
+  period        String @default("OVERALL")
+
+  status        AttendanceSessionStatus @default(DRAFT)
+
+  createdAt     DateTime @default(now())
+  submittedAt   DateTime?
+  lockedAt      DateTime?
+
+  section       Section  @relation(fields: [sectionId], references: [section_id])
+  teacher       Teacher  @relation(fields: [teacherId], references: [teacher_id])
+
+  records       AttendanceRecord[]
+  notifications Notification[]
+
+  @@unique([sectionId, date, campusSession, period])
+  @@index([sectionId, date])
+  @@index([date])
+}
+
+model AttendanceRecord {
+  id                  String   @id @default(uuid())
+
+  attendanceSessionId String
+  studentId           String
+
+  status              AttendanceStatus
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  updatedBy           String?
+
+  attendanceSession   AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+
+  student             Student @relation(fields: [studentId], references: [student_id])
+
+  updatedByTeacher Teacher? @relation("AttendanceUpdatedBy", fields: [updatedBy], references: [teacher_id])
+
+
+  @@unique([attendanceSessionId, studentId])
+  @@index([attendanceSessionId])
+  @@index([studentId])
+}
+
+model Notification {
+  id            String              @id @default(uuid())
+  dedupeKey     String              @unique  // prevents duplicates on retries
+  studentId      String
+  parentId       String
+  channel       NotificationChannel
+  payload       Json
+  status        NotificationStatus  @default(PENDING)
+  retryCount    Int                 @default(0)
+  lastError     String?
+  queuedAt      DateTime?
+  sentAt        DateTime?
+
+  attendanceSessionId String?
+  attendanceSession   AttendanceSession? @relation(fields: [attendanceSessionId], references: [id], onDelete: SetNull)
+
+  student        Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+  parent          Parent @relation(fields: [parentId], references: [parent_id], onDelete: Cascade)
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([status, channel])
+  @@index([attendanceSessionId])
+  @@index([parentId])
+}
+
+model BroadcastNotification {
+  id          String   @id @default(uuid())
+  title       String
+  message     String
+  attachmentUrl  String?
+  createdBy   String   // teacher/admin
+  campusId    String
+  status      BroadcastStatus // DRAFT | SENT
+
+  createdAt   DateTime @default(now())
+}
+
+model BroadcastTarget {
+  id                    String @id @default(uuid())
+  broadcastNotificationId String
+  targetType            TargetType // SCHOOL | CLASS | SECTION | STUDENT
+  targetId              String?
+
+  @@index([broadcastNotificationId])
+}
+
+model UserNotification {
+  id              String @id @default(uuid())
+  notification_id String
+  student_id      String
+  read_at         DateTime?
+
+  @@unique([notification_id, student_id]) // dedupe + idempotency
+}
+
+

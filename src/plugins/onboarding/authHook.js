@@ -1,4 +1,4 @@
-import { getUserDetails } from "../utils/cache/user.cache.js";
+import { getUserDetails } from "../../utils/cache/user.cache.js";
 import fp from "fastify-plugin";
 
 const authHook = async (app) => {

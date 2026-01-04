@@ -5,14 +5,20 @@ import {
     updateStudent, 
     deleteStudent 
   } from "../../db/student.db.js";
+import { createParent, createParentData } from "../../services/onboarding/student.service.js";
   
   export async function student_post(req, reply) {
     try {
       const data = req.body;
       const result = await createStudent(data);
-  
-      if (!result) throw new Error();
-  
+      
+
+      if (!result) throw new Error("Unable to Create Student Details");
+      
+      const parentResult = await createParent(createParentData(data?.extras || {}))
+
+      if (!parentResult) throw new Error("Unable to create Parent Details")
+      
       reply.send({ success: true, message: "Student Created Successfully" });
     } catch (err) {
       console.log(err);

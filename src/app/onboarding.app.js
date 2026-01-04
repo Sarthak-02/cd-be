@@ -1,15 +1,9 @@
-import Fastify from 'fastify'
 import dotenv from 'dotenv'
-import cors from '@fastify/cors'
-
-import cookiePlugin from '../plugins/cookie.js'
-import jwtPlugin from '../plugins/jwt.js'
-import authHook from '../plugins/authHook.js'
-import prismaPlugin from '../plugins/prisma.js'
 
 
 
-import {authRoutes ,userRoutes , schoolRoutes,campusRoutes,classRoutes,sectionRoutes,teacherRoutes, studentRoutes,uploadRoutes} from '../routes/onboarding/index.js'
+
+import { authRoutes, campusRoutes, classRoutes, schoolRoutes, sectionRoutes, studentRoutes, teacherRoutes, uploadRoutes, userRoutes } from '../routes/onboarding/index.js'
 import { buildApp } from './buildApp.js'
 
 
