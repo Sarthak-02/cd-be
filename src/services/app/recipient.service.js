@@ -1,64 +1,87 @@
 import { prisma } from "../prisma/prisma.js";
 
 
-async function resolveRecipientsForBroadcast(broadcastId, campusId) {
+export async function resolveRecipientsForBroadcast(broadcastId, campusId) {
   const targets = await prisma.broadcastTarget.findMany({
     where: { broadcastNotificationId: broadcastId },
   });
 
-  const studentIds = new Set();
+  // key = receiverId, value = { receiverId, targetType, targetId }
+  const receiverMap = new Map();
 
-  // STUDENT targets
+  const addReceiver = (receiverId, targetType, targetId) => {
+    if (!receiverMap.has(receiverId)) {
+      receiverMap.set(receiverId, {
+        receiverId,
+        targetType,
+        targetId,
+      });
+    }
+  };
+
+  // 1️⃣ STUDENT targets
   targets.forEach(t => {
     if (t.targetType === "STUDENT" && t.targetId) {
-      studentIds.add(t.targetId);
+      addReceiver(t.targetId, "STUDENT", t.targetId);
     }
   });
 
-  // SCHOOL
-  if (targets.some(t => t.targetType === "SCHOOL")) {
-    const students = await prisma.student.findMany({
+  // 2️⃣ CAMPUS targets
+  if (targets.some(t => t.targetType === "CAMPUS")) {
+    const receivers = await prisma.student.findMany({
       where: { campus_id: campusId },
       select: { student_id: true },
     });
-    students.forEach(s => studentIds.add(s.student_id));
+
+    receivers.forEach(s =>
+      addReceiver(s.student_id, "CAMPUS", campusId)
+    );
   }
 
-  // SECTION
+  // 3️⃣ SECTION targets
   const sectionIds = targets
     .filter(t => t.targetType === "SECTION")
     .map(t => t.targetId);
 
   if (sectionIds.length) {
-    const students = await prisma.student.findMany({
+    const receivers = await prisma.student.findMany({
       where: {
         campus_id: campusId,
         section_id: { in: sectionIds },
       },
-      select: { student_id: true },
+      select: { student_id: true, section_id: true },
     });
-    students.forEach(s => studentIds.add(s.student_id));
+
+    receivers.forEach(s =>
+      addReceiver(s.student_id, "SECTION", s.section_id)
+    );
   }
 
-  // CLASS
+  // 4️⃣ CLASS targets
   const classIds = targets
     .filter(t => t.targetType === "CLASS")
     .map(t => t.targetId);
 
   if (classIds.length) {
-    const students = await prisma.student.findMany({
+    const receivers = await prisma.student.findMany({
       where: {
         campus_id: campusId,
         section: {
           class_id: { in: classIds },
         },
       },
-      select: { student_id: true },
+      select: {
+        student_id: true,
+        section: { select: { class_id: true } },
+      },
     });
-    students.forEach(s => studentIds.add(s.student_id));
+
+    receivers.forEach(s =>
+      addReceiver(s.student_id, "CLASS", s.section.class_id)
+    );
   }
 
-  return Array.from(studentIds);
+  return Array.from(receiverMap.values());
 }
 
-module.exports = { resolveRecipientsForBroadcast };
+

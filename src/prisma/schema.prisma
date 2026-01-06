@@ -61,15 +61,33 @@ enum NotificationStatus {
 
 enum BroadcastStatus{
   DRAFT
-  SENT
+  NOTIFYING
+  SUBMITTED
 }
 
 enum TargetType{
-  SCHOOL
+  CAMPUS
   CLASS
   SECTION
   STUDENT
+  TEACHER
 }
+
+enum NotificationSourceType {
+  ATTENDANCE
+  BROADCAST
+  HOMEWORK
+  EXAM
+  SYSTEM
+}
+
+enum NotificationRecipientType {
+  STUDENT
+  PARENT
+  TEACHER
+  ALL
+}
+
 
 model User {
   userid            String   @id
@@ -174,8 +192,11 @@ model Student {
   student_gender         Gender
   student_dob            DateTime
   student_current_status StudentStatus
-  extras                 Json?
+  section_id     String
+  section                Section       @relation(fields: [section_id],references: [section_id], onDelete: Cascade)
 
+  extras                 Json?
+  
   campus_id              String
   campus                 Campus        @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
 
@@ -185,6 +206,7 @@ model Student {
   attendanceRecords      AttendanceRecord[]
   notifications          Notification[]
   parents                Parent[] 
+
 
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
@@ -291,48 +313,77 @@ model AttendanceRecord {
 
 model Notification {
   id            String              @id @default(uuid())
-  dedupeKey     String              @unique  // prevents duplicates on retries
-  studentId      String
-  parentId       String
+  dedupeKey     String              @unique
+
+  // recipient
+  recipientType NotificationRecipientType
+  receiverId     String?
+  parentId      String? //In case of recipientType is Student ? Do i even need this ?
+  senderId     String?
+
   channel       NotificationChannel
   payload       Json
+
+  // source
+  sourceType    NotificationSourceType
+  sourceId      String  // attendanceSessionId, broadcastId, etc.
+
   status        NotificationStatus  @default(PENDING)
   retryCount    Int                 @default(0)
   lastError     String?
   queuedAt      DateTime?
   sentAt        DateTime?
 
-  attendanceSessionId String?
-  attendanceSession   AttendanceSession? @relation(fields: [attendanceSessionId], references: [id], onDelete: SetNull)
-
-  student        Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
-  parent          Parent @relation(fields: [parentId], references: [parent_id], onDelete: Cascade)
-
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([status, channel])
-  @@index([attendanceSessionId])
-  @@index([parentId])
+  @@index([sourceType, sourceId])
 }
+
 
 model BroadcastNotification {
   id          String   @id @default(uuid())
   title       String
   message     String
-  attachmentUrl  String?
   createdBy   String   // teacher/admin
   campusId    String
   status      BroadcastStatus // DRAFT | SENT
 
+  broadcastAttachments BroadcastAttachment[]
+  broadcastTargets BroadcastTarget[]
   createdAt   DateTime @default(now())
+  submittedAt   DateTime?
+}
+
+model BroadcastAttachment {
+  id                     String @id @default(uuid())
+  broadcastNotificationId String
+  fileUrl                String
+  fileName               String
+  fileType               String
+  fileSize               Int
+
+  broadcastNotification  BroadcastNotification @relation(
+    fields: [broadcastNotificationId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  @@index([broadcastNotificationId])
 }
 
 model BroadcastTarget {
   id                    String @id @default(uuid())
   broadcastNotificationId String
-  targetType            TargetType // SCHOOL | CLASS | SECTION | STUDENT
-  targetId              String?
+  targetType            TargetType // CAMPUS | CLASS | SECTION | STUDENT
+  targetId              JSON?
+
+  broadcastNotification  BroadcastNotification @relation(
+    fields: [broadcastNotificationId],
+    references: [id],
+    onDelete: Cascade
+  )
 
   @@index([broadcastNotificationId])
 }
@@ -340,10 +391,10 @@ model BroadcastTarget {
 model UserNotification {
   id              String @id @default(uuid())
   notification_id String
-  student_id      String
+  receiver_id      String
   read_at         DateTime?
 
-  @@unique([notification_id, student_id]) // dedupe + idempotency
+  @@unique([notification_id, receiver_id]) // dedupe + idempotency
 }
 
 

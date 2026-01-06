@@ -1,15 +1,15 @@
 import { prisma } from "../prisma/prisma.js";
 
-export async function createNotifications(data) {
+export async function createNotifications(data,tx=prisma) {
   // data = array of notifications
-  return prisma.notification.createMany({
+  return tx.notification.createMany({
     data,
     skipDuplicates: true, // safe for retries (dedupeKey unique)
   });
 }
 
-export async function markNotificationsQueued(ids) {
-  return prisma.notification.updateMany({
+export async function markNotificationsQueued(ids,tx=prisma) {
+  return tx.notification.updateMany({
     where: { id: { in: ids } },
     data: { status: "QUEUED", queuedAt: new Date() },
   });

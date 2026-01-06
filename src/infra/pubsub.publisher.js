@@ -1,11 +1,11 @@
 import { PubSub } from "@google-cloud/pubsub";
 
 const pubsub = new PubSub();
-const TOPIC = process.env.NOTIF_TOPIC || "notifications";
+const TOPIC = "notifications";
 
-export async function publishNotifications(notifications) {
+export async function publishNotifications(notifications,topic = TOPIC) {
   // notifications = array of { id, channel, parentId, payload }
-  const topic = pubsub.topic(TOPIC);
+  const topic = pubsub.topic(topic);
 
   const results = [];
   for (const n of notifications) {

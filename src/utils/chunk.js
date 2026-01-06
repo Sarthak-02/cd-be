@@ -1,4 +1,4 @@
-function chunkArray(arr, size) {
+export function chunkArray(arr, size) {
     const chunks = [];
     for (let i = 0; i < arr.length; i += size) {
       chunks.push(arr.slice(i, i + size));
@@ -6,5 +6,4 @@ function chunkArray(arr, size) {
     return chunks;
   }
   
-  module.exports = { chunkArray };
   

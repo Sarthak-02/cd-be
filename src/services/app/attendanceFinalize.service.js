@@ -1,7 +1,7 @@
 import { prisma } from "../prisma/prisma.js";
-import { createNotifications, markNotificationsQueued } from "../repositories/notification.repo.js";
-import { publishNotifications } from "../infra/pubsub.publisher.js";
-import { makeDedupeKey } from "../utils/dedupe.js";
+import { createNotifications, markNotificationsQueued } from "../../db/notification.db.js";
+import { publishNotifications } from "../../infra/pubsub.publisher.js";
+import { makeDedupeKey } from "../../utils/crypto.js";
 
 export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeacherId }) {
     // Step A: Build notifications + move session to NOTIFYING in ONE transaction
