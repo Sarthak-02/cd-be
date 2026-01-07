@@ -1,0 +1,19 @@
+{
+    "name": "notification-worker",
+    "version": "1.0.0",
+    "private": true,
+    "type": "commonjs",
+    "main": "src/index.js",
+    "scripts": {
+      "start": "node src/index.js",
+      "dev": "nodemon src/index.js"
+    },
+    "dependencies": {
+      "@prisma/client": "^5.7.0",
+      "fastify": "^4.26.0"
+    },
+    "devDependencies": {
+      "nodemon": "^3.0.2"
+    }
+  }
+  

@@ -132,9 +132,10 @@ export async function sendBroadcast(broadcastId, campusId) {
     });
 
     await createNotifications(notifRows, tx);
+
     const pending = await tx.notification.findMany({
-      where: { attendanceSessionId: sessionId, status: "PENDING" },
-      select: { id: true, channel: true, parentId: true, payload: true },
+      where: { sourceId: broadcast.id, status: "PENDING" },
+      select: { id: true, channel: true},
     });
 
     return { createdNotifIds: pending };
