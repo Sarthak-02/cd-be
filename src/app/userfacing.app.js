@@ -1,18 +1,13 @@
 import dotenv from 'dotenv'
-
-
-
-
-
-import { buildApp } from './buildApp.js'
 import attendanceRoutes from '../routes/app/attendance.route.js'
+import { buildUserfacing } from './buildUserfacing.js'
 
 
 dotenv.config()
 
 
-export async function buildOperatorServer() {
-    const app = await buildApp()
+export async function buildUserfacingServer() {
+    const app = await buildUserfacing()
   
     await app.register(async function (appRoutes) {
       await appRoutes.register(attendanceRoutes)

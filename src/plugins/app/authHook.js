@@ -1,4 +1,4 @@
-import { getUserDetails } from "../../utils/cache/user.cache.js";
+
 import fp from "fastify-plugin";
 
 const authHook = async (app) => {
@@ -13,7 +13,8 @@ const authHook = async (app) => {
       
       const {userid} = payload
       // Attach the userId or whole payload to req for all routes
-      const user_details = await getUserDetails(userid)
+      // const user_details = await getUserDetails(userid)
+      const user_details = {}
 
       if(!user_details){
         throw new Error("Unauthorized")

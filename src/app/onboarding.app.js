@@ -4,14 +4,15 @@ import dotenv from 'dotenv'
 
 
 import { authRoutes, campusRoutes, classRoutes, schoolRoutes, sectionRoutes, studentRoutes, teacherRoutes, uploadRoutes, userRoutes } from '../routes/onboarding/index.js'
-import { buildApp } from './buildApp.js'
+import { buildOnboarding } from './buildOnboarding.js'
+
 
 
 dotenv.config()
 
 
 export async function buildOperatorServer() {
-    const app = await buildApp()
+    const app = await buildOnboarding()
   
     await app.register(async function (onboardingRoutes) {
       await onboardingRoutes.register(authRoutes)
