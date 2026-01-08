@@ -13,6 +13,7 @@
     "@fastify/cors": "^11.1.0",
     "@fastify/jwt": "^10.0.0",
     "@google-cloud/cloud-sql-connector": "^1.8.4",
+    "@google-cloud/pubsub": "^5.2.1",
     "@google-cloud/storage": "^7.18.0",
     "@prisma/adapter-mariadb": "^7.0.1",
     "@prisma/adapter-pg": "^7.2.0",

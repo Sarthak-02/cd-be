@@ -1,4 +1,4 @@
-import { prisma } from "../prisma/prisma.js";
+import { prisma } from "../../prisma/prisma.js";
 import { createNotifications, markNotificationsQueued } from "../../db/notification.db.js";
 import { publishNotifications } from "../../infra/pubsub.publisher.js";
 import { makeDedupeKey } from "../../utils/crypto.js";

@@ -1,5 +1,5 @@
-import { bulkCreateAttendance } from "../../services/app/attendance.service";
-import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service";
+import { bulkCreateAttendance } from "../../services/app/attendance.service.js";
+import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service.js";
 
 export async function bulk_create_attendance_post(req, reply) {
     try {

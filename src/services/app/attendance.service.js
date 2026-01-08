@@ -5,8 +5,8 @@ import {
     getOrCreateAttendanceSession,
     submitAttendanceSession,
     upsertAttendanceRecord,
-} from "../../db/attendance.db";
-import { prisma } from "../../prisma/prisma";
+} from "../../db/attendance.db.js";
+import { prisma } from "../../prisma/prisma.js";
 
 export async function startAttendance({
     section_id,
