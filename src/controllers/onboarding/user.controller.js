@@ -10,7 +10,7 @@ export async function user_post(req, reply) {
         const result = await createUser(data)
 
         if (!result){
-            throw new Error("Unabel to create user")
+            throw new Error("Unable to create user")
         }
 
         reply.send({ success: true, message: "User Created Successfully"});

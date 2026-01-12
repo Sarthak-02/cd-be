@@ -2,7 +2,7 @@ import cors from '@fastify/cors'
 import dotenv from 'dotenv'
 import Fastify from 'fastify'
 
-import authHook from '../plugins/app/authHook.js'
+import authHook from '../plugins/onboarding/authHook.js'
 import cookiePlugin from '../plugins/common/cookie.js'
 import jwtPlugin from '../plugins/common/jwt.js'
 import prismaPlugin from '../plugins/common/prisma.js'
