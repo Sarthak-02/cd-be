@@ -1,9 +1,9 @@
-import { broadcast_post } from "../../controllers/app/broadcast.controller";
-import { BroadcastCreateRequestSchema } from "../../schemas/app/broadcast.schema"
+import { broadcast_post } from "../../controllers/app/broadcast.controller.js";
+import { BroadcastCreateRequestSchema } from "../../schemas/app/broadcast.schema.js"
 
 const broadcastCreateOpts = {
     schema: {
-        body: BroadcastCreateRequestSchema
+        body: BroadcastCreateRequestSchema.body
     }
 };
 

@@ -4,7 +4,7 @@ import { AttendanceBulkCreateRequestSchema } from '../../schemas/app/attendance.
 
 const attendanceBulkCreateOpts = {
     schema: {
-        body: AttendanceBulkCreateRequestSchema
+        body: AttendanceBulkCreateRequestSchema.body
     }
 };
 

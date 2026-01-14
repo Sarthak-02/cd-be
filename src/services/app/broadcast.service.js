@@ -65,9 +65,9 @@ export async function createBroadcastDraft({
         data: attachmentUrls.map((a) => ({
           broadcastNotificationId: broadcast.id,
           fileUrl: a.fileUrl,
-          fileName: a.fileName || null,
-          fileType: a.fileType || null,
-          fileSize: a.fileSize || null,
+          fileName: a.fileName ?? null,
+          fileType: a.fileType ?? null,
+          fileSize: a.fileSize ?? null,
         })),
       });
     }
@@ -88,7 +88,7 @@ export async function sendBroadcast(broadcastId, campusId) {
 
     const broadcast = await prisma.broadcastNotification.findUnique({
       where: {
-        id: broadcastNotificationId,
+        id: broadcastId,
       },
       include: {
         broadcastAttachments: true,
@@ -151,7 +151,7 @@ export async function sendBroadcast(broadcastId, campusId) {
     await markNotificationsQueued(ids, tx);
 
     await tx.broadcastNotification.update({
-      where: { id: sessionId },
+      where: { id: broadcastId },
       data: { status: "SUBMITTED", submittedAt: new Date() },
     });
   });

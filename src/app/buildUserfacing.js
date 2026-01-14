@@ -23,7 +23,7 @@ export async function buildUserfacing() {
         credentials: true
     })
 
-    await fastify.register(authHook)
+    // await fastify.register(authHook)
     await fastify.register(prismaPlugin)
 
     return fastify

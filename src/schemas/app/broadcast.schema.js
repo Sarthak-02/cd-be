@@ -3,17 +3,17 @@ export const BroadcastCreateRequestSchema = {
     tags: ["Attendance"],
     body: {
         type: "object",
-        required: ["title", "message", "targetType", "targetId"],
+        required: ["title", "message", "targets"],
         properties: {
             title: { type: "string" },
             message: { type: "string" },
             attachmentUrls: {
                 type: "array",
-                items: { type: "string" }
+                items: { type: "object" }
             },
             targets: {
                 type: "array",
-                item: {
+                items: {
                     type: "object",
                     properties: {
                         targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT"] },
