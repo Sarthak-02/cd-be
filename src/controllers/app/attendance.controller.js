@@ -7,7 +7,7 @@ export async function bulk_create_attendance_post(req, reply) {
       const {section_id,teacher_id,date,campus_session="FULL_DAY",period = "OVERALL",records} = data;
 
       
-      const session_id = await bulkCreateAttendance(section_id,teacher_id,date,campus_session,period);
+      const session_id = await bulkCreateAttendance({records,teacher_id,section_id,date,campus_session,period});
     
       if (!session_id) throw new Error("Bulk Create Attendance failed");
 
@@ -16,7 +16,7 @@ export async function bulk_create_attendance_post(req, reply) {
                   triggeredByTeacherId: teacher_id,
               });
       
-      if (!notification) throw new Error("finalizeAttendanceAndNotify failed")
+      if (!notification.ok) throw new Error("finalizeAttendanceAndNotify failed")
   
       reply.send({ success: true, message: "Attendance Registered Successfully" });
     } catch (err) {

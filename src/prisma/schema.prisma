@@ -194,8 +194,8 @@ model Student {
   student_dob            DateTime
   student_current_status StudentStatus
 
-  section_id String
-  section    Section @relation(fields: [section_id], references: [section_id], onDelete: Cascade)
+  student_section_id String
+  section    Section @relation(fields: [student_section_id], references: [section_id], onDelete: Cascade)
 
   extras Json?
 

@@ -22,7 +22,7 @@ export const studentCreateRequestSchema = {
             student_gender: { type: "string" },
             student_dob: { type: "string", format: "date-time" },
             student_current_status: { type: "string" },
-
+            student_section_id : {type:"string"},
             extras: { type: "object", nullable: true },
 
             campus_id: { type: "string" },

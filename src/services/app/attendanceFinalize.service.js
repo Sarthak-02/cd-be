@@ -27,30 +27,28 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
         const records = await tx.attendanceRecord.findMany({
             where: { attendanceSessionId: sessionId },
             select: {
-                status: true,
-                studentId: true,
-                student: {
+              status: true,
+              studentId: true,
+              student: {
+                select: {
+                  student_id: true,
+                  student_first_name: true,
+                  student_middle_name: true,
+                  student_last_name: true,
+                  parents: {
                     select: {
-                        student_id: true,
-                        student_first_name: true,
-                        student_middle_name :true,
-                        student_last_name: true,
-                        parents: {
-                            select: {
-                                parent: {
-                                    select: {
-                                        parent_id: true,
-                                        parent_email: true,
-                                        parent_phone: true,
-                                        preferences: { select: { channel: true, enabled: true } },
-                                    },
-                                },
-                            },
-                        },
+                      parent_id: true,
+                      name: true,
+                      email: true,
+                      phone: true,
+                      relation_type: true,
                     },
+                  },
                 },
+              },
             },
-        });
+          });
+          
 
         // Build notification rows (one per parent per enabled channel per student record)
         const notifRows = [];
@@ -59,11 +57,13 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
             const student = r.student;
             const studentName = [student.student_first_name,student.student_middle_name, student.student_last_name].filter(Boolean).join(" ");
             
-            for (const sp of student.parents) {
-                const parent = sp.parent;
-                const enabledChannels = parent.preferences
-                    .filter((p) => p.enabled)
-                    .map((p) => p.channel);
+            for (const parent of student.parents) {
+                
+                // const enabledChannels = parent.preferences
+                //     .filter((p) => p.enabled)
+                //     .map((p) => p.channel);
+
+                const enabledChannels = ["APP"]
 
                 for (const channel of enabledChannels) {
                     // Optional: skip channel if contact missing
@@ -82,15 +82,17 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
                         parentId: parent.parent_id,
                         channel,
                         status: "PENDING",
-                        attendanceSessionId: sessionId,
+                        sourceId: sessionId,
                         payload: {
-                            type: "ATTENDANCE",
-                            sessionId,
                             date: session.date,
                             studentId: student.student_id,
                             studentName,
                             attendanceStatus: r.status,
                         },
+                        recipientType:"PARENT",
+                        receiverId:parent.parent_id,//it may be changed to parent id
+                        sourceType:"ATTENDANCE",
+                        senderId:triggeredByTeacherId
                     });
                 }
             }
@@ -101,7 +103,7 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
 
         // Fetch IDs of created notifications for this session in PENDING state
         const pending = await tx.notification.findMany({
-            where: { attendanceSessionId: sessionId, status: "PENDING" },
+            where: { sourceId: sessionId, status: "PENDING" },
             select: { id: true, channel: true, parentId: true, payload: true },
         });
 
@@ -116,12 +118,12 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
     await prisma.$transaction(async (tx) => {
         const ids = publishRes.map((x) => x.id);
         await markNotificationsQueued(ids, tx);
-
+    
         await tx.attendanceSession.update({
-            where: { id: sessionId },
-            data: { status: "SUBMITTED", submittedAt: new Date() },
+          where: { id: sessionId },
+          data: { status: "SUBMITTED", submittedAt: new Date() },
         });
-    });
+      });
 
     return { ok: true, queuedCount: createdNotifIds.length };
 }

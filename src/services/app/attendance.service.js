@@ -73,41 +73,55 @@ export async function bulkCreateAttendance({
     section_id,
     date,
     campus_session,
-    period
-}) {
-
-    const attendanceSession = getOrCreateAttendanceSession({ sectionId: section_id, teacherId: teacher_id, date, campusSession: campus_session, period })
-
-    // 1️⃣ Validate input
-    if (!attendanceSession || !records?.length) {
+    period,
+  }) {
+    return await prisma.$transaction(async (tx) => {
+      // 1️⃣ Get or create attendance session (inside txn)
+      const attendanceSession = await getOrCreateAttendanceSession(
+        {
+          sectionId: section_id,
+          teacherId: teacher_id,
+          date,
+          campusSession: campus_session,
+          period,
+        },
+        tx // pass transaction client
+      );
+  
+      // 2️⃣ Validate input
+      if (!attendanceSession || !records?.length) {
         throw new Error("Invalid bulk attendance input");
-    }
-
-    const attendanceSessionId = attendanceSession?.id
-
-    // 2️⃣ Load session + enforce rules
-    const session = await prisma.attendanceSession.findUnique({
+      }
+  
+      const attendanceSessionId = attendanceSession.id;
+  
+      // 3️⃣ Load session + enforce rules (inside txn)
+      const session = await tx.attendanceSession.findUnique({
         where: { id: attendanceSessionId },
         select: {
-            status: true,
-            teacherId: true,
+          status: true,
+          teacherId: true,
         },
-    });
-
-    if (!session) {
+      });
+  
+      if (!session) {
         throw new Error("Attendance session not found");
-    }
-
-    // 3️⃣ Business rules
-    if (session.status !== "DRAFT") {
+      }
+  
+      // 4️⃣ Business rules
+      if (session.status !== "DRAFT") {
         throw new Error("Bulk create allowed only in DRAFT sessions");
-    }
-
-    // 4️⃣ Perform bulk create
-    return await bulkUpsertAttendanceRecords({
-        attendanceSessionId,
-        records,
-        updatedBy: teacher_id,
+      }
+  
+      // 5️⃣ Perform bulk upsert (inside txn)
+      return await bulkUpsertAttendanceRecords(
+        {
+          attendanceSessionId,
+          records,
+          updatedBy: teacher_id,
+        },
+        tx // pass transaction client
+      );
     });
-}
-
+  }
+  

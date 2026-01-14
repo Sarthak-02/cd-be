@@ -13,7 +13,7 @@ const pubsub = new PubSub({
 
 const TOPIC = "notifications";
 
-export async function publishNotifications(notifications,) {
+export async function publishNotifications(notifications) {
   // notifications = array of { id, channel, parentId, payload }
   const topic = pubsub.topic(TOPIC);
 

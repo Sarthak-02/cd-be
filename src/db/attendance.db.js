@@ -4,15 +4,15 @@ export async function bulkUpsertAttendanceRecords({
     attendanceSessionId,
     records, // [{ studentId, status }]
     updatedBy
-  }) {
+  },tx=prisma) {
     try {
       await prisma.$transaction(
-        records.map(({ studentId, status }) =>
-          prisma.attendanceRecord.upsert({
+        records.map(({ student_id, status }) =>
+          tx.attendanceRecord.upsert({
             where: {
               attendanceSessionId_studentId: {
                 attendanceSessionId,
-                studentId,
+                studentId:student_id,
               },
             },
             update: {
@@ -21,7 +21,7 @@ export async function bulkUpsertAttendanceRecords({
             },
             create: {
               attendanceSessionId,
-              studentId,
+              studentId:student_id,
               status
             },
           })
@@ -155,9 +155,9 @@ export async function getOrCreateAttendanceSession({
     date,
     campusSession = "FULL_DAY",
     period = "OVERALL",
-}) {
+},tx=prisma) {
     try {
-        return await prisma.attendanceSession.upsert({
+        return await tx.attendanceSession.upsert({
             where: {
                 sectionId_date_campusSession_period: {
                     sectionId,
