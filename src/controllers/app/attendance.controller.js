@@ -1,5 +1,6 @@
 import { bulkCreateAttendance } from "../../services/app/attendance.service.js";
 import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service.js";
+import { getAttendanceDetailsBySection, getStudentAttendanceBySection } from "../../db/attendance.db.js";
 
 export async function bulk_create_attendance_post(req, reply) {
     try {
@@ -24,3 +25,97 @@ export async function bulk_create_attendance_post(req, reply) {
       reply.code(400).send({ success: false, message: "Unable to Register Attendance" });
     }
   }
+
+export async function get_attendance_details(req, reply) {
+    try {
+        const { section_id, date, campus_session, period } = req.query;
+
+        if (!section_id || !date) {
+            return reply.code(400).send({ 
+                success: false, 
+                message: "section_id and date are required" 
+            });
+        }
+
+        const attendanceDetails = await getAttendanceDetailsBySection({
+            sectionId: section_id,
+            date,
+            campusSession: campus_session,
+            period
+        });
+
+        if (!attendanceDetails || attendanceDetails.length === 0) {
+            return reply.code(404).send({ 
+                success: false, 
+                message: "No attendance records found for the specified criteria" 
+            });
+        }
+
+        reply.send({ 
+            success: true, 
+            data: attendanceDetails 
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({ 
+            success: false, 
+            message: "Unable to fetch attendance details" 
+        });
+    }
+}
+
+export async function get_student_attendance(req, reply) {
+    try {
+        const { student_id, section_id, start_date, end_date } = req.query;
+
+        if (!student_id || !section_id) {
+            return reply.code(400).send({ 
+                success: false, 
+                message: "student_id and section_id are required" 
+            });
+        }
+
+        const attendanceRecords = await getStudentAttendanceBySection({
+            studentId: student_id,
+            sectionId: section_id,
+            startDate: start_date,
+            endDate: end_date
+        });
+
+        if (!attendanceRecords || attendanceRecords.length === 0) {
+            return reply.code(404).send({ 
+                success: false, 
+                message: "No attendance records found for the student in this section" 
+            });
+        }
+
+        // Calculate attendance summary
+        const summary = {
+            total: attendanceRecords.length,
+            present: attendanceRecords.filter(r => r.status === "PRESENT").length,
+            absent: attendanceRecords.filter(r => r.status === "ABSENT").length,
+            late: attendanceRecords.filter(r => r.status === "LATE").length,
+            excused: attendanceRecords.filter(r => r.status === "EXCUSED").length,
+        };
+
+        summary.attendance_percentage = summary.total > 0 
+            ? ((summary.present + summary.late) / summary.total * 100).toFixed(2) 
+            : 0;
+
+        reply.send({ 
+            success: true, 
+            data: {
+                student: attendanceRecords[0]?.student,
+                section: attendanceRecords[0]?.attendanceSession?.section,
+                summary,
+                records: attendanceRecords
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({ 
+            success: false, 
+            message: "Unable to fetch student attendance records" 
+        });
+    }
+}

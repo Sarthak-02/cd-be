@@ -170,4 +170,191 @@ export async function listBroadcasts(campusId, createdBy) {
   });
 }
 
+// Fetch broadcasts received by a user (via Notification table)
+export async function getBroadcastsByReceiverId(receiverId, campusId) {
+  // Find all notifications for this receiver where sourceType = "BROADCAST"
+  const notifications = await prisma.notification.findMany({
+    where: {
+      receiverId,
+      sourceType: "BROADCAST",
+    },
+    select: {
+      sourceId: true,
+    },
+    distinct: ["sourceId"],
+  });
+
+  const broadcastIds = notifications.map((n) => n.sourceId);
+
+  if (broadcastIds.length === 0) {
+    return [];
+  }
+
+  // Fetch the actual broadcast notifications with attachments
+  const broadcasts = await prisma.broadcastNotification.findMany({
+    where: {
+      id: { in: broadcastIds },
+      ...(campusId ? { campusId } : {}),
+    },
+    include: {
+      broadcastAttachments: {
+        select: {
+          id: true,
+          fileUrl: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Get unique sender IDs
+  const senderIds = [...new Set(broadcasts.map((b) => b.createdBy))];
+
+  // Fetch sender details from multiple possible sources
+  const [users, teachers] = await Promise.all([
+    prisma.user.findMany({
+      where: { userid: { in: senderIds } },
+      select: { userid: true, username: true },
+    }),
+    prisma.teacher.findMany({
+      where: { teacher_id: { in: senderIds } },
+      select: {
+        teacher_id: true,
+        teacher_first_name: true,
+        teacher_middle_name: true,
+        teacher_last_name: true,
+      },
+    }),
+  ]);
+
+  // Create a lookup map for sender names
+  const senderMap = new Map();
+  
+  users.forEach((user) => {
+    senderMap.set(user.userid, user.username);
+  });
+  
+  teachers.forEach((teacher) => {
+    const fullName = [
+      teacher.teacher_first_name,
+      teacher.teacher_middle_name,
+      teacher.teacher_last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    senderMap.set(teacher.teacher_id, fullName);
+  });
+
+  // Enrich broadcasts with sender info and attachment details
+  return broadcasts.map((broadcast) => ({
+    id: broadcast.id,
+    title: broadcast.title,
+    message: broadcast.message,
+    createdBy: broadcast.createdBy,
+    senderName: senderMap.get(broadcast.createdBy) || "Unknown",
+    campusId: broadcast.campusId,
+    status: broadcast.status,
+    hasAttachments: broadcast.broadcastAttachments.length > 0,
+    attachmentCount: broadcast.broadcastAttachments.length,
+    attachments: broadcast.broadcastAttachments,
+    createdAt: broadcast.createdAt,
+    submittedAt: broadcast.submittedAt,
+  }));
+}
+
+// Fetch broadcasts created by a user (with status)
+export async function getBroadcastsByCreatedBy(createdBy, campusId) {
+  return prisma.broadcastNotification.findMany({
+    where: {
+      createdBy,
+      ...(campusId ? { campusId } : {}),
+    },
+    select: {
+      id: true,
+      title: true,
+      message: true,
+      createdBy: true,
+      campusId: true,
+      status: true,
+      createdAt: true,
+      submittedAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+// Fetch broadcast details by ID
+export async function getBroadcastById(broadcastId) {
+  const broadcast = await prisma.broadcastNotification.findUnique({
+    where: {
+      id: broadcastId,
+    },
+    include: {
+      broadcastAttachments: true,
+      broadcastTargets: true,
+    },
+  });
+
+  if (!broadcast) {
+    throw new Error("BROADCAST_NOT_FOUND");
+  }
+
+  return broadcast;
+}
+
+// Fetch all broadcasts with optional filters
+export async function getAllBroadcasts({ campusId, status, createdBy, limit = 100, offset = 0 }) {
+  const where = {};
+  
+  if (campusId) where.campusId = campusId;
+  if (status) where.status = status;
+  if (createdBy) where.createdBy = createdBy;
+
+  const [broadcasts, total] = await Promise.all([
+    prisma.broadcastNotification.findMany({
+      where,
+      include: {
+        broadcastAttachments: {
+          select: {
+            id: true,
+            fileUrl: true,
+            fileName: true,
+            fileType: true,
+            fileSize: true,
+          },
+        },
+        broadcastTargets: {
+          select: {
+            id: true,
+            targetType: true,
+            targetId: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.broadcastNotification.count({ where }),
+  ]);
+
+  // Add sourceType to each broadcast for consistency
+  const enrichedBroadcasts = broadcasts.map(broadcast => ({
+    ...broadcast,
+    sourceType: "BROADCAST",
+    hasAttachments: broadcast.broadcastAttachments.length > 0,
+    attachmentCount: broadcast.broadcastAttachments.length,
+  }));
+
+  return {
+    broadcasts: enrichedBroadcasts,
+    total,
+    limit,
+    offset,
+  };
+}
+
 

@@ -29,3 +29,59 @@ export const AttendanceBulkCreateRequestSchema = {
     }
   }
 }
+
+export const AttendanceGetDetailsSchema = {
+  tags: ["Attendance"],
+  querystring: {
+    type: "object",
+    required: ["section_id", "date"],
+    properties: {
+      section_id: { 
+        type: "string",
+        description: "Section ID to fetch attendance for"
+      },
+      date: { 
+        type: "string", 
+        format: "date",
+        description: "Date in YYYY-MM-DD format"
+      },
+      campus_session: { 
+        type: "string",
+        enum: ["MORNING", "EVENING", "FULL_DAY"],
+        description: "Optional campus session filter"
+      },
+      period: { 
+        type: "string",
+        description: "Optional period filter (e.g., OVERALL, P1, P2, etc.)"
+      }
+    }
+  }
+}
+
+export const StudentAttendanceGetSchema = {
+  tags: ["Attendance"],
+  querystring: {
+    type: "object",
+    required: ["student_id", "section_id"],
+    properties: {
+      student_id: { 
+        type: "string",
+        description: "Student ID to fetch attendance for"
+      },
+      section_id: { 
+        type: "string",
+        description: "Section ID to filter attendance records"
+      },
+      start_date: { 
+        type: "string", 
+        format: "date",
+        description: "Optional start date for date range filter (YYYY-MM-DD)"
+      },
+      end_date: { 
+        type: "string", 
+        format: "date",
+        description: "Optional end date for date range filter (YYYY-MM-DD)"
+      }
+    }
+  }
+}
