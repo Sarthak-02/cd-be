@@ -88,6 +88,19 @@ enum NotificationRecipientType {
   ALL
 }
 
+enum EndUserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+  PARENT
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  MICROSOFT
+}
+
 model User {
   userid   String  @id
   username String
@@ -100,6 +113,21 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model EndUser {
+  id             String   @id @default(uuid())
+  userid         String   @unique
+  username       String   @unique
+  passwordHash   String?  // bcrypt / argon2
+  authProvider   AuthProvider @default(LOCAL)
+
+  role           EndUserRole // STUDENT | TEACHER | ADMIN | PARENT
+  isActive       Boolean  @default(true)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 
 model School {
   school_id      String  @id

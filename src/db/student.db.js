@@ -53,3 +53,31 @@ export async function deleteStudent(student_id) {
     return false;
   }
 }
+
+export async function getActiveStudentsBySection(section_id) {
+  try {
+    return await prisma.student.findMany({
+      where: {
+        student_section_id: section_id,
+        student_current_status: "active"
+      },
+      select: {
+        student_id: true,
+        student_first_name: true,
+        student_middle_name: true,
+        student_last_name: true,
+        student_photo_url: true,
+        student_gender: true,
+        student_dob: true,
+        student_roll_no: true,
+        student_admission_no: true
+      },
+      orderBy: {
+        student_roll_no: 'asc'
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}

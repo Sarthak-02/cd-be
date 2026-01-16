@@ -25,7 +25,7 @@ export async function getUser(userid,omit={}) {
     }
     return user;
   }
-  
+
 
 export async function getAllUsers() {
     let users = null
