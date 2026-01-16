@@ -5,7 +5,7 @@ import Fastify from 'fastify'
 import cookiePlugin from '../plugins/common/cookie.js'
 import jwtPlugin from '../plugins/common/jwt.js'
 import prismaPlugin from '../plugins/common/prisma.js'
-import authHook from '../plugins/onboarding/authHook.js'
+import authHook from '../plugins/app/authHook.js'
 
 dotenv.config()
 
@@ -23,7 +23,7 @@ export async function buildUserfacing() {
         credentials: true
     })
 
-    // await fastify.register(authHook)
+    await fastify.register(authHook)
     await fastify.register(prismaPlugin)
 
     return fastify
