@@ -48,7 +48,10 @@ import {
   
   export async function campus_all_get(req, reply) {
     try {
-      let campuses = await getAllCampuses({extras:true});
+      let {site_permissions} = req.token_info
+      site_permissions = site_permissions.map(({value}) => value)
+      console.log(site_permissions)
+      let campuses = await getAllCampuses({omit:{extras:true}, where: {school_id: {in: site_permissions}}});
       campuses =  campuses.map((campus) => ({...campus,label:campus.campus_name , value:campus.campus_id}))
       reply.send({ success: true, message: "Fetched all Campuses", data: campuses });
     } catch (err) {

@@ -12,7 +12,12 @@ dotenv.config()
 
 
 export async function buildOperatorServer() {
+  
     const app = await buildOnboarding()
+    app.addHook("onRequest", (req, reply, done) => {
+      console.log("REQ:", req.method, req.url, "Origin:", req.headers.origin)
+      done()
+    })
   
     await app.register(async function (onboardingRoutes) {
       await onboardingRoutes.register(authRoutes)

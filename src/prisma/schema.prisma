@@ -132,10 +132,6 @@ model EndUser {
 model School {
   school_id      String  @id
   school_name    String
-  school_type    String
-  motto          String?
-  school_website String?
-  school_logo    String?
   extras         Json?
 
   createdAt DateTime @default(now())

@@ -1,4 +1,4 @@
-import {  getUser, validateUser } from "../../db/user.db.js";
+import { getUser, validateUser } from "../../db/user.db.js";
 import bcrypt from "bcrypt"
 import { clearCache, getUserDetails } from "../../utils/cache/user.cache.js";
 
@@ -34,32 +34,33 @@ export async function loginController(req, reply) {
 
   // Remove password before sending
   delete user.password;
-  
+
   reply.send({
     success: true,
     message: "Logged in",
     data: user,
   });
 }
-  
+
 export const logoutController = async (req, reply) => {
 
-    //clear the cache
-    clearCache()
+  const { userid } = req?.token_info;
+  //clear the cache
+  await clearCache(userid)
 
-    // Clear the cookie
-    reply.clearCookie("token", {
-      path: "/",       
-      httpOnly: true,
-      sameSite: "strict",
-      secure: true
-    });
-  
-    return reply.send({
-      success: true,
-      message: "Logged out successfully"
-    });
-  };
+  // Clear the cookie
+  reply.clearCookie("token", {
+    path: "/",
+    httpOnly: true,
+    sameSite: "strict",
+    secure: true
+  });
+
+  return reply.send({
+    success: true,
+    message: "Logged out successfully"
+  });
+};
 
 // export async function signupController(req,reply){
 //   try{

@@ -59,7 +59,7 @@ export async function getUserDetails(userId) {
 
 }
 
-export async function clearCache() {
+export async function clearCache(userId) {
     try {
         await firestore.collection("users").doc(userId).delete();
         userCache.delete(userId);

@@ -21,9 +21,9 @@ export async function getCampus(campus_id) {
   }
 }
 
-export async function getAllCampuses(omit) {
+export async function getAllCampuses({omit={},where={}}) {
   try {
-    return await prisma.campus.findMany({omit});
+    return await prisma.campus.findMany({omit,where});
   } catch (err) {
     console.log(err);
     return null;
