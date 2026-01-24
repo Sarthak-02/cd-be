@@ -60,7 +60,7 @@ export const AttendanceGetDetailsSchema = {
 
 export const StudentAttendanceGetSchema = {
   tags: ["Attendance"],
-  querystring: {
+  body: {
     type: "object",
     required: ["student_id", "section_id"],
     properties: {

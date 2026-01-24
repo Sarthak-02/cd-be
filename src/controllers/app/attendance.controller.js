@@ -66,7 +66,7 @@ export async function get_attendance_details(req, reply) {
 
 export async function get_student_attendance(req, reply) {
     try {
-        const { student_id, section_id, start_date, end_date } = req.query;
+        const { student_id, section_id, start_date, end_date } = req.body;
 
         if (!student_id || !section_id) {
             return reply.code(400).send({ 
@@ -83,8 +83,8 @@ export async function get_student_attendance(req, reply) {
         });
 
         if (!attendanceRecords || attendanceRecords.length === 0) {
-            return reply.code(404).send({ 
-                success: false, 
+            return reply.code(200).send({ 
+                success: true, 
                 message: "No attendance records found for the student in this section" 
             });
         }
@@ -105,8 +105,6 @@ export async function get_student_attendance(req, reply) {
         reply.send({ 
             success: true, 
             data: {
-                student: attendanceRecords[0]?.student,
-                section: attendanceRecords[0]?.attendanceSession?.section,
                 summary,
                 records: attendanceRecords
             }

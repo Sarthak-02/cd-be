@@ -16,7 +16,7 @@ const attendanceGetDetailsOpts = {
 
 const studentAttendanceGetOpts = {
     schema: {
-        querystring: StudentAttendanceGetSchema.querystring
+        body: StudentAttendanceGetSchema.body
     }
 };
 
@@ -24,7 +24,7 @@ const studentAttendanceGetOpts = {
 async function attendanceRoutes(app, options) {
     app.post("/attendance/bulk_create", attendanceBulkCreateOpts, bulk_create_attendance_post);
     app.get("/attendance/details", attendanceGetDetailsOpts, get_attendance_details);
-    app.get("/attendance/student", studentAttendanceGetOpts, get_student_attendance);
+    app.post("/attendance/student", studentAttendanceGetOpts, get_student_attendance);
 
     //   app.get("/logout",{},logoutController)
 }

@@ -88,6 +88,19 @@ enum NotificationRecipientType {
   ALL
 }
 
+enum HomeworkStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  LATE
+  GRADED
+}
+
 enum EndUserRole {
   STUDENT
   TEACHER
@@ -229,8 +242,9 @@ model Student {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  attendanceRecords AttendanceRecord[]
-  parents           Parent[]
+  attendanceRecords   AttendanceRecord[]
+  parents             Parent[]
+  homeworkSubmissions HomeworkSubmission[]
 
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
@@ -277,6 +291,8 @@ model Teacher {
 
   attendanceSessions AttendanceSession[]
   updatedAttendance  AttendanceRecord[]  @relation("AttendanceUpdatedBy")
+  homework           Homework[]
+  gradedSubmissions  HomeworkSubmission[] @relation("HomeworkGradedBy")
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
@@ -406,3 +422,71 @@ model UserNotification {
 
   @@unique([notification_id, receiver_id]) // dedupe + idempotency
 }
+
+model Subject {
+  subject_id   String  @id @default(uuid())
+  subject_name String
+  subject_code String?
+  description  String?
+  campus_id    String
+  
+  extras Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  homework Homework[]
+
+  @@unique([campus_id, subject_code])
+  @@index([campus_id])
+}
+
+model Homework {
+  id          String         @id @default(uuid())
+  title       String
+  description String
+  dueDate     DateTime
+  subject     String
+  createdBy   String // Teacher's ID
+  status      HomeworkStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  teacher     Teacher              @relation(fields: [createdBy], references: [teacher_id])
+  attachments HomeworkAttachment[]
+  targets     HomeworkTarget[]
+
+  @@index([createdBy])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model HomeworkAttachment {
+  id         String @id @default(uuid())
+  homeworkId String
+  fileUrl    String
+  fileName   String
+  fileType   String
+  fileSize   Int
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([homeworkId])
+}
+
+model HomeworkTarget {
+  id         String     @id @default(uuid())
+  homeworkId String
+  targetType TargetType // CLASS | SECTION | STUDENT
+  targetId   String // class_id, section_id, or student_id
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId])
+  @@index([targetType, targetId])
+}
+

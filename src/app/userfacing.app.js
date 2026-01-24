@@ -4,6 +4,7 @@ import { buildUserfacing } from './buildUserfacing.js'
 import { broadcastRouter } from '../routes/app/broadcast.route.js'
 import { authRouter } from '../routes/app/auth.route.js'
 import studentRoutes from '../routes/app/student.route.js'
+import homeworkRoutes from '../routes/app/homework.route.js'
 
 
 dotenv.config()
@@ -17,6 +18,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(attendanceRoutes)
       await appRoutes.register(broadcastRouter)
       await appRoutes.register(studentRoutes)
+      await appRoutes.register(homeworkRoutes)
      
     }, { prefix: '/app' })
   

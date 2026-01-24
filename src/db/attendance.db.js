@@ -351,56 +351,19 @@ export async function getStudentAttendanceBySection({
                 studentId,
                 attendanceSession: sessionWhereClause,
             },
-            include: {
+            select: {
+                status: true,
                 attendanceSession: {
                     select: {
-                        id: true,
-                        date: true,
-                        campusSession: true,
                         period: true,
-                        status: true,
                         submittedAt: true,
                         teacher: {
                             select: {
                                 teacher_id: true,
                                 teacher_first_name: true,
                                 teacher_last_name: true,
-                                teacher_employee_code: true,
                             },
                         },
-                        section: {
-                            select: {
-                                section_id: true,
-                                section_name: true,
-                                section_short_name: true,
-                                classRef: {
-                                    select: {
-                                        class_id: true,
-                                        class_name: true,
-                                        class_short_name: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                student: {
-                    select: {
-                        student_id: true,
-                        student_admission_no: true,
-                        student_roll_no: true,
-                        student_first_name: true,
-                        student_middle_name: true,
-                        student_last_name: true,
-                        student_photo_url: true,
-                        student_gender: true,
-                    },
-                },
-                updatedByTeacher: {
-                    select: {
-                        teacher_id: true,
-                        teacher_first_name: true,
-                        teacher_last_name: true,
                     },
                 },
             },
