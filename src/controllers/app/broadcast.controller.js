@@ -4,7 +4,8 @@ import {
   getBroadcastsByReceiverId,
   getBroadcastsByCreatedBy,
   getBroadcastById,
-  getAllBroadcasts
+  getAllBroadcasts,
+  updateBroadcast
 } from "../../services/app/broadcast.service.js";
 
 export async function broadcast_post(req, reply) {
@@ -140,6 +141,43 @@ export async function broadcast_get_all(req, reply) {
       },
     });
   } catch (err) {
+    return reply.code(400).send({ error: err.message });
+  }
+}
+
+// Update broadcast (only for DRAFT status)
+export async function broadcast_update(req, reply) {
+  try {
+    const { id } = req.params;
+    const { title, message, attachmentUrls, targets } = req.body;
+
+    if (!id) {
+      return reply.code(400).send({ error: "id is required" });
+    }
+
+    const updatedBroadcast = await updateBroadcast(id, {
+      title,
+      message,
+      attachmentUrls,
+      targets,
+    });
+
+    return reply.code(200).send({
+      success: true,
+      data: updatedBroadcast,
+    });
+  } catch (err) {
+    if (err.message === "BROADCAST_NOT_FOUND") {
+      return reply.code(404).send({ error: "Broadcast not found" });
+    }
+    if (err.message === "BROADCAST_ALREADY_SENT") {
+      return reply.code(400).send({ 
+        error: "Cannot update broadcast that has already been sent. Only DRAFT broadcasts can be updated." 
+      });
+    }
+    if (err.message === "MAX_3_ATTACHMENTS_ALLOWED") {
+      return reply.code(400).send({ error: "Maximum 3 attachments allowed" });
+    }
     return reply.code(400).send({ error: err.message });
   }
 }

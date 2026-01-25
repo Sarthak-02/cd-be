@@ -92,9 +92,40 @@ export async function get_attendance_details(req, reply) {
             });
         }
 
+        // Format attendance details
+        const session = attendanceDetails[0];
+        const formattedAttendanceDetails = {
+            is_attendance_taken: true,
+            teacher_id: session.teacher?.teacher_id,
+            teacher_name: [
+                session.teacher?.teacher_first_name,
+                session.teacher?.teacher_last_name
+            ].filter(Boolean).join(' '),
+            submitStatus: session.status,
+            submittedAt: session.submittedAt,
+            attendanceSessionId: session.id,
+            section_id: session.sectionId,
+            section_name: session.section.section_name,
+            section_short_name: session.section.section_short_name,
+            students: session.records.map(record => ({
+                student_id: record.student.student_id,
+                name: [
+                    record.student.student_first_name,
+                    record.student.student_middle_name,
+                    record.student.student_last_name
+                ].filter(Boolean).join(' '),
+                profile_photo: record.student.student_photo_url,
+                gender: record.student.student_gender,
+                roll_number: record.student.student_roll_no,
+                admission_number: record.student.student_admission_no,
+                attendance_status: record.status,
+                attendanceRecordId: record.id
+            }))
+        };
+
         reply.send({ 
             success: true, 
-            data: attendanceDetails ? attendanceDetails[0] : {}
+            data: formattedAttendanceDetails
         });
     } catch (err) {
         console.error(err);

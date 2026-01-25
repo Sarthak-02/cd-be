@@ -12,7 +12,7 @@ async function resolveStudentsForExam(examId, tx = prisma) {
         select: {
             target: true,
             targets: {
-                select: { targetType, targetId }
+                select: { targetType: true, targetId: true }
             }
         }
     });

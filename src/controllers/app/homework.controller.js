@@ -5,6 +5,7 @@ import {
     getHomeworkByTarget,
     getHomeworkForStudent,
     updateHomework,
+    publishHomework,
     closeHomework,
     deleteHomework,
     addHomeworkAttachments,
@@ -248,20 +249,43 @@ export async function get_homework_for_student(req, reply) {
 export async function update_homework(req, reply) {
     try {
         const { homework_id } = req.params;
-        const { title, description, due_date, subject } = req.body;
+        const { title, description, due_date, subject, teacher_id, targets, publish } = req.body;
 
+        // First, check if homework exists and get its current status
+        const existingHomework = await getHomeworkById(homework_id);
+        if (!existingHomework) {
+            return reply.code(404).send({
+                success: false,
+                message: "Homework not found"
+            });
+        }
+
+        // Update homework with all provided fields
         const homework = await updateHomework({
             homeworkId: homework_id,
             title,
             description,
             dueDate: due_date,
-            subject
+            subject,
+            createdBy: teacher_id,
+            targets
         });
 
         if (!homework) {
-            return reply.code(404).send({
+            return reply.code(500).send({
                 success: false,
-                message: "Homework not found or unable to update"
+                message: "Unable to update homework"
+            });
+        }
+
+        // If publish is true and homework is in DRAFT status, publish it
+        if (publish === true && homework.status === 'DRAFT') {
+            const publishedHomework = await publishHomework(homework_id);
+            
+            return reply.send({
+                success: true,
+                message: "Homework updated and published successfully",
+                data: publishedHomework
             });
         }
 
@@ -274,7 +298,7 @@ export async function update_homework(req, reply) {
         console.error(err);
         reply.code(500).send({
             success: false,
-            message: "Unable to update homework"
+            message: err.message || "Unable to update homework"
         });
     }
 }

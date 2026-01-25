@@ -435,8 +435,6 @@ model Subject {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  homework Homework[]
-
   @@unique([campus_id, subject_code])
   @@index([campus_id])
 }
@@ -490,6 +488,31 @@ model HomeworkTarget {
   @@index([targetType, targetId])
 }
 
+model HomeworkSubmission {
+  id         String           @id @default(uuid())
+  homeworkId String
+  studentId  String
+  status     SubmissionStatus @default(PENDING)
+  
+  submittedAt DateTime?
+  grade       String?
+  feedback    String?
+  gradedBy    String?
+  gradedAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  student       Student  @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+  gradedByTeacher Teacher? @relation("HomeworkGradedBy", fields: [gradedBy], references: [teacher_id])
+  
+  @@unique([homeworkId, studentId])
+  @@index([homeworkId])
+  @@index([studentId])
+  @@index([status])
+}
+
 
 enum ExamStatus {
   DRAFT
@@ -501,6 +524,7 @@ enum ExamTargetType {
   STUDENT
   SECTION
   SCHOOL
+  CLASS
 }
 
 model Exam {
@@ -534,8 +558,8 @@ model ExamSubject {
   examId        String
   subjectName   String
   examDate      DateTime @db.Date
-  examStartTime DateTime @db.Time
-  examEndTime   DateTime @db.Time
+  examStartTime String 
+  examEndTime   String 
   
   extras Json? // Additional subject-specific details
   

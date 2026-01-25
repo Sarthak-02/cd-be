@@ -1,6 +1,95 @@
 import { prisma } from "../prisma/prisma.js"
 
 /**
+ * Helper function to fetch target name based on target type and ID
+ */
+async function getTargetName(targetType, targetId) {
+    try {
+        switch (targetType) {
+            case 'CLASS':
+                const classData = await prisma.class.findUnique({
+                    where: { class_id: targetId },
+                    select: { class_name: true }
+                });
+                return classData?.class_name || null;
+            
+            case 'SECTION':
+                const sectionData = await prisma.section.findUnique({
+                    where: { section_id: targetId },
+                    select: { section_name: true }
+                });
+                return sectionData?.section_name || null;
+            
+            case 'STUDENT':
+                const studentData = await prisma.student.findUnique({
+                    where: { student_id: targetId },
+                    select: { 
+                        student_first_name: true,
+                        student_middle_name: true,
+                        student_last_name: true 
+                    }
+                });
+                if (studentData) {
+                    return [
+                        studentData.student_first_name,
+                        studentData.student_middle_name,
+                        studentData.student_last_name
+                    ].filter(Boolean).join(' ');
+                }
+                return null;
+            
+            default:
+                return null;
+        }
+    } catch (err) {
+        console.error(`Error fetching target name for ${targetType}:`, err);
+        return null;
+    }
+}
+
+/**
+ * Helper function to format teacher data
+ */
+function formatTeacherData(teacher) {
+    if (!teacher) return null;
+    
+    const teacherName = [
+        teacher.teacher_first_name,
+        teacher.teacher_middle_name,
+        teacher.teacher_last_name
+    ].filter(Boolean).join(' ');
+
+    return {
+        teacher_id: teacher.teacher_id,
+        teacher_name: teacherName,
+        ...(teacher.teacher_employee_code && { teacher_employee_code: teacher.teacher_employee_code }),
+        ...(teacher.teacher_email && { teacher_email: teacher.teacher_email })
+    };
+}
+
+/**
+ * Helper function to format homework with target names and teacher name
+ */
+async function formatHomeworkResponse(homework) {
+    // Fetch target names
+    const targetsWithNames = await Promise.all(
+        homework.targets.map(async (target) => {
+            const targetName = await getTargetName(target.targetType, target.targetId);
+            return {
+                ...target,
+                target_name: targetName
+            };
+        })
+    );
+
+    return {
+        ...homework,
+        targets: targetsWithNames,
+        teacher: formatTeacherData(homework.teacher)
+    };
+}
+
+/**
  * Create a new homework with attachments and targets
  */
 export async function createHomework({
@@ -54,7 +143,7 @@ export async function createHomework({
  */
 export async function getHomeworkById(homeworkId) {
     try {
-        return await prisma.homework.findUnique({
+        const homework = await prisma.homework.findUnique({
             where: { id: homeworkId },
             include: {
                 attachments: true,
@@ -63,6 +152,7 @@ export async function getHomeworkById(homeworkId) {
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                         teacher_employee_code: true,
                         teacher_email: true,
@@ -70,6 +160,10 @@ export async function getHomeworkById(homeworkId) {
                 }
             }
         });
+
+        if (!homework) return null;
+
+        return await formatHomeworkResponse(homework);
     } catch (err) {
         console.error("Error fetching homework by ID:", err);
         return null;
@@ -115,6 +209,7 @@ export async function getHomeworkByTeacher({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                     }
                 }
@@ -126,7 +221,8 @@ export async function getHomeworkByTeacher({
             skip: offset
         });
 
-        return homework;
+        // Format homework with target names and teacher name
+        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
     } catch (err) {
         console.error("Error fetching homework by teacher:", err);
         return [];
@@ -175,6 +271,7 @@ export async function getHomeworkByTarget({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                     }
                 }
@@ -186,7 +283,8 @@ export async function getHomeworkByTarget({
             skip: offset
         });
 
-        return homework;
+        // Format homework with target names and teacher name
+        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
     } catch (err) {
         console.error("Error fetching homework by target:", err);
         return [];
@@ -254,6 +352,7 @@ export async function getHomeworkForStudent({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                     }
                 }
@@ -265,7 +364,8 @@ export async function getHomeworkForStudent({
             skip: offset
         });
 
-        return homework;
+        // Format homework with target names and teacher name
+        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
     } catch (err) {
         console.error("Error fetching homework for student:", err);
         return [];
@@ -280,7 +380,9 @@ export async function updateHomework({
     title,
     description,
     dueDate,
-    subject
+    subject,
+    createdBy,
+    targets
 }) {
     try {
         const updateData = {};
@@ -289,8 +391,24 @@ export async function updateHomework({
         if (description !== undefined) updateData.description = description;
         if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
         if (subject !== undefined) updateData.subject = subject;
+        if (createdBy !== undefined) updateData.createdBy = createdBy;
 
-        return await prisma.homework.update({
+        // If targets are provided, replace existing targets
+        if (targets !== undefined && Array.isArray(targets)) {
+            // Delete existing targets and create new ones
+            await prisma.homeworkTarget.deleteMany({
+                where: { homeworkId }
+            });
+
+            updateData.targets = {
+                create: targets.map(target => ({
+                    targetType: target.targetType,
+                    targetId: target.targetId
+                }))
+            };
+        }
+
+        const homework = await prisma.homework.update({
             where: { id: homeworkId },
             data: updateData,
             include: {
@@ -300,11 +418,17 @@ export async function updateHomework({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
+                        teacher_employee_code: true,
+                        teacher_email: true,
                     }
                 }
             }
         });
+
+        // Format the response with target names and teacher name
+        return await formatHomeworkResponse(homework);
     } catch (err) {
         console.error("Error updating homework:", err);
         return null;
@@ -482,7 +606,7 @@ export async function getUpcomingHomework({
         const futureDate = new Date();
         futureDate.setDate(today.getDate() + days);
 
-        return await prisma.homework.findMany({
+        const homework = await prisma.homework.findMany({
             where: {
                 status: "PUBLISHED",
                 dueDate: {
@@ -503,6 +627,7 @@ export async function getUpcomingHomework({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                     }
                 }
@@ -511,6 +636,9 @@ export async function getUpcomingHomework({
                 dueDate: "asc"
             }
         });
+
+        // Format homework with target names and teacher name
+        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
     } catch (err) {
         console.error("Error fetching upcoming homework:", err);
         return [];
@@ -527,7 +655,7 @@ export async function getOverdueHomework({
     try {
         const today = new Date();
 
-        return await prisma.homework.findMany({
+        const homework = await prisma.homework.findMany({
             where: {
                 status: "PUBLISHED",
                 dueDate: {
@@ -547,6 +675,7 @@ export async function getOverdueHomework({
                     select: {
                         teacher_id: true,
                         teacher_first_name: true,
+                        teacher_middle_name: true,
                         teacher_last_name: true,
                     }
                 }
@@ -555,6 +684,9 @@ export async function getOverdueHomework({
                 dueDate: "desc"
             }
         });
+
+        // Format homework with target names and teacher name
+        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
     } catch (err) {
         console.error("Error fetching overdue homework:", err);
         return [];

@@ -1,6 +1,35 @@
 import { prisma } from "../prisma/prisma.js"
 
 /**
+ * Helper function to convert time string to proper format for PostgreSQL TIME
+ * @param {string} timeStr - Time string (HH:MM or HH:MM:SS)
+ * @returns {string} Time string in HH:MM:SS format
+ */
+function parseTimeString(timeStr) {
+    try {
+        // Validate the time string format
+        if (!timeStr || typeof timeStr !== 'string') {
+            throw new Error(`Invalid time string: ${timeStr}`);
+        }
+        
+        // If the time string already has seconds, return as is
+        if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) {
+            return timeStr;
+        }
+        
+        // If the time string is HH:MM, add :00 for seconds
+        if (/^\d{2}:\d{2}$/.test(timeStr)) {
+            return `${timeStr}:00`;
+        }
+        
+        throw new Error(`Invalid time string format: ${timeStr}. Expected HH:MM or HH:MM:SS`);
+    } catch (err) {
+        console.error(`Error parsing time string: ${timeStr}`, err);
+        throw err;
+    }
+}
+
+/**
  * Create a new exam with subjects and targets
  */
 export async function createExam({
@@ -27,9 +56,9 @@ export async function createExam({
                     create: subjects.map(subject => ({
                         subjectName: subject.subjectName,
                         examDate: new Date(subject.examDate),
-                        examStartTime: new Date(subject.examStartTime),
-                        examEndTime: new Date(subject.examEndTime),
-                        extras: subject.extras || null
+                        examStartTime: subject.examStartTime,
+                        examEndTime: subject.examEndTime,
+                        extras: subject?.extras || null
                     }))
                 },
                 targets: {
@@ -44,8 +73,13 @@ export async function createExam({
 
         return exam;
     } catch (err) {
-        console.error("Error creating exam:", err);
-        return null;
+        console.error("Error creating exam:");
+        console.error("Message:", err.message);
+        console.error("Stack:", err.stack);
+        if (err.code) console.error("Code:", err.code);
+        if (err.meta) console.error("Meta:", JSON.stringify(err.meta, null, 2));
+        if (err.clientVersion) console.error("Prisma Client Version:", err.clientVersion);
+        throw err; // Re-throw to see the actual error in the controller
     }
 }
 
@@ -431,8 +465,8 @@ export async function updateExam({
                             examId,
                             subjectName: subject.subjectName,
                             examDate: new Date(subject.examDate),
-                            examStartTime: new Date(subject.examStartTime),
-                            examEndTime: new Date(subject.examEndTime),
+                            examStartTime: parseTimeString(subject.examStartTime),
+                            examEndTime: parseTimeString(subject.examEndTime),
                             extras: subject.extras || null
                         }))
                     });
@@ -555,8 +589,8 @@ export async function addExamSubjects(examId, subjects) {
                 examId,
                 subjectName: subject.subjectName,
                 examDate: new Date(subject.examDate),
-                examStartTime: new Date(subject.examStartTime),
-                examEndTime: new Date(subject.examEndTime),
+                examStartTime: parseTimeString(subject.examStartTime),
+                examEndTime: parseTimeString(subject.examEndTime),
                 extras: subject.extras || null
             }))
         });
@@ -584,8 +618,8 @@ export async function updateExamSubject({
         
         if (subjectName !== undefined) updateData.subjectName = subjectName;
         if (examDate !== undefined) updateData.examDate = new Date(examDate);
-        if (examStartTime !== undefined) updateData.examStartTime = new Date(examStartTime);
-        if (examEndTime !== undefined) updateData.examEndTime = new Date(examEndTime);
+        if (examStartTime !== undefined) updateData.examStartTime = parseTimeString(examStartTime);
+        if (examEndTime !== undefined) updateData.examEndTime = parseTimeString(examEndTime);
         if (extras !== undefined) updateData.extras = extras;
 
         return await prisma.examSubject.update({

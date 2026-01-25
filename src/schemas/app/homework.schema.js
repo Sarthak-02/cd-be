@@ -241,6 +241,34 @@ export const HomeworkUpdateSchema = {
             subject: {
                 type: "string",
                 description: "Subject name"
+            },
+            teacher_id: {
+                type: "string",
+                format: "uuid",
+                description: "Teacher ID (creator of homework)"
+            },
+            targets: {
+                type: "array",
+                items: {
+                    type: "object",
+                    required: ["targetType", "targetId"],
+                    properties: {
+                        targetType: {
+                            type: "string",
+                            enum: ["CLASS", "SECTION", "STUDENT"],
+                            description: "Type of target"
+                        },
+                        targetId: {
+                            type: "string",
+                            description: "ID of the target (class_id, section_id, or student_id)"
+                        }
+                    }
+                },
+                description: "List of targets (classes, sections, or students) for this homework"
+            },
+            publish: {
+                type: "boolean",
+                description: "Whether to publish the homework after updating (only works if status is DRAFT)"
             }
         },
         minProperties: 1

@@ -104,10 +104,24 @@ export async function create_exam(req, reply) {
             data: exam
         });
     } catch (err) {
-        console.error(err);
+        console.error("Controller error creating exam:");
+        console.error("Error name:", err.name);
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+        if (err.code) console.error("Error code:", err.code);
+        if (err.meta) console.error("Error meta:", err.meta);
+        
         reply.code(500).send({
             success: false,
-            message: err.message || "Unable to create exam"
+            message: err.message || "Unable to create exam",
+            ...(process.env.NODE_ENV === 'development' && { 
+                error: {
+                    name: err.name,
+                    message: err.message,
+                    code: err.code,
+                    meta: err.meta
+                }
+            })
         });
     }
 }

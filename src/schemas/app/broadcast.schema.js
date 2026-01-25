@@ -3,7 +3,7 @@ export const BroadcastCreateRequestSchema = {
     tags: ["Attendance"],
     body: {
         type: "object",
-        required: ["title", "message", "targets"],
+        required: ["title", "message", "targets", "campusId"],
         properties: {
             title: { type: "string" },
             message: { type: "string" },
@@ -88,6 +88,38 @@ export const BroadcastGetAllSchema = {
                 type: "number",
                 minimum: 0,
                 default: 0
+            }
+        }
+    }
+}
+
+export const BroadcastUpdateSchema = {
+    tags: ["Broadcast"],
+    params: {
+        type: "object",
+        required: ["id"],
+        properties: {
+            id: { type: "string" }
+        }
+    },
+    body: {
+        type: "object",
+        properties: {
+            title: { type: "string" },
+            message: { type: "string" },
+            attachmentUrls: {
+                type: "array",
+                items: { type: "object" }
+            },
+            targets: {
+                type: "array",
+                items: {
+                    type: "object",
+                    properties: {
+                        targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT"] },
+                        targetId: { type: "string" },
+                    }
+                }
             }
         }
     }

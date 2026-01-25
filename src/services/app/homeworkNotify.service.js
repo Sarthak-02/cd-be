@@ -9,7 +9,7 @@ import { makeDedupeKey } from "../../utils/crypto.js";
 async function resolveStudentsForHomework(homeworkId, tx = prisma) {
     const targets = await tx.homeworkTarget.findMany({
         where: { homeworkId },
-        select: { targetType, targetId }
+        select: { targetType: true, targetId: true }
     });
 
     // Use a Map to deduplicate students (same student may be in multiple targets)

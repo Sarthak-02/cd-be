@@ -357,4 +357,93 @@ export async function getAllBroadcasts({ campusId, status, createdBy, limit = 10
   };
 }
 
+// Update broadcast (only allowed for DRAFT status)
+export async function updateBroadcast(broadcastId, updateData) {
+  const { title, message, attachmentUrls, targets } = updateData;
+
+  return prisma.$transaction(async (tx) => {
+    // 1️⃣ Check if broadcast exists and is in DRAFT status
+    const existingBroadcast = await tx.broadcastNotification.findUnique({
+      where: { id: broadcastId },
+    });
+
+    if (!existingBroadcast) {
+      throw new Error("BROADCAST_NOT_FOUND");
+    }
+
+    if (existingBroadcast.status !== "DRAFT") {
+      throw new Error("BROADCAST_ALREADY_SENT");
+    }
+
+    // 2️⃣ Prepare update data
+    const updatePayload = {};
+    if (title !== undefined) updatePayload.title = title;
+    if (message !== undefined) updatePayload.message = message;
+
+    // 3️⃣ Update broadcast if there are fields to update
+    let updatedBroadcast = existingBroadcast;
+    if (Object.keys(updatePayload).length > 0) {
+      updatedBroadcast = await tx.broadcastNotification.update({
+        where: { id: broadcastId },
+        data: updatePayload,
+      });
+    }
+
+    // 4️⃣ Update targets if provided
+    if (targets !== undefined && Array.isArray(targets)) {
+      // Delete existing targets
+      await tx.broadcastTarget.deleteMany({
+        where: { broadcastNotificationId: broadcastId },
+      });
+
+      // Create new targets
+      if (targets.length > 0) {
+        await tx.broadcastTarget.createMany({
+          data: targets.map((t) => ({
+            broadcastNotificationId: broadcastId,
+            targetType: t.targetType,
+            targetId: t.targetId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    // 5️⃣ Update attachments if provided
+    if (attachmentUrls !== undefined && Array.isArray(attachmentUrls)) {
+      // Validate max attachments
+      if (attachmentUrls.length > 3) {
+        throw new Error("MAX_3_ATTACHMENTS_ALLOWED");
+      }
+
+      // Delete existing attachments
+      await tx.broadcastAttachment.deleteMany({
+        where: { broadcastNotificationId: broadcastId },
+      });
+
+      // Create new attachments
+      if (attachmentUrls.length > 0) {
+        await tx.broadcastAttachment.createMany({
+          data: attachmentUrls.map((a) => ({
+            broadcastNotificationId: broadcastId,
+            fileUrl: a.fileUrl,
+            fileName: a.fileName ?? null,
+            fileType: a.fileType ?? null,
+            fileSize: a.fileSize ?? null,
+          })),
+        });
+      }
+    }
+
+    // 6️⃣ Return updated broadcast with all relations
+    return tx.broadcastNotification.findUnique({
+      where: { id: broadcastId },
+      include: {
+        broadcastAttachments: true,
+        broadcastTargets: true,
+      },
+    });
+  });
+}
+
 

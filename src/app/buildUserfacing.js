@@ -1,6 +1,8 @@
 import cors from '@fastify/cors'
 import dotenv from 'dotenv'
 import Fastify from 'fastify'
+import ajvCompiler from '@fastify/ajv-compiler'
+import ajvFormats from 'ajv-formats'
 
 import cookiePlugin from '../plugins/common/cookie.js'
 import jwtPlugin from '../plugins/common/jwt.js'
@@ -12,6 +14,13 @@ dotenv.config()
 export async function buildUserfacing() {
     const fastify = Fastify({ logger: true })
 
+    // Register AJV compiler with format support
+    await fastify.register(ajvCompiler, {
+        ajv: {
+            plugins: [ajvFormats]
+        }
+    })
+
     // Register CORS FIRST before any other plugins
     await fastify.register(cors, {
         origin: (origin, cb) => {
@@ -22,10 +31,10 @@ export async function buildUserfacing() {
                 'http://127.0.0.1:5001',
                 process.env.FRONTEND_URL
             ].filter(Boolean) // Remove undefined/null values
-            
+
             // Allow requests with no origin (like mobile apps, curl, Postman)
             if (!origin) return cb(null, true)
-            
+
             if (allowedOrigins.includes(origin)) {
                 cb(null, true)
             } else {

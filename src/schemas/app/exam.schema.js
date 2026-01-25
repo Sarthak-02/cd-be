@@ -11,7 +11,7 @@ export const ExamCreateSchema = {
             },
             target: {
                 type: "string",
-                enum: ["STUDENT", "SECTION", "SCHOOL"],
+                enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL"],
                 description: "Target level of the exam"
             },
             grading_type: {
@@ -48,13 +48,13 @@ export const ExamCreateSchema = {
                         },
                         examStartTime: { 
                             type: "string",
-                            format: "time",
-                            description: "Exam start time (HH:MM:SS)"
+                            pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                            description: "Exam start time (HH:MM or HH:MM:SS)"
                         },
                         examEndTime: { 
                             type: "string",
-                            format: "time",
-                            description: "Exam end time (HH:MM:SS)"
+                            pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                            description: "Exam end time (HH:MM or HH:MM:SS)"
                         },
                         extras: {
                             type: "object",
@@ -73,7 +73,7 @@ export const ExamCreateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["STUDENT", "SECTION", "SCHOOL"],
+                            enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL"],
                             description: "Type of target"
                         },
                         targetId: {
@@ -297,7 +297,7 @@ export const ExamUpdateSchema = {
             },
             target: {
                 type: "string",
-                enum: ["STUDENT", "SECTION", "SCHOOL"],
+                enum: ["CLASS","STUDENT", "SECTION", "SCHOOL"],
                 description: "Target level of the exam"
             },
             grading_type: {
@@ -325,13 +325,13 @@ export const ExamUpdateSchema = {
                         },
                         examStartTime: { 
                             type: "string",
-                            format: "time",
-                            description: "Exam start time (HH:MM:SS)"
+                            pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                            description: "Exam start time (HH:MM or HH:MM:SS)"
                         },
                         examEndTime: { 
                             type: "string",
-                            format: "time",
-                            description: "Exam end time (HH:MM:SS)"
+                            pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                            description: "Exam end time (HH:MM or HH:MM:SS)"
                         },
                         extras: {
                             type: "object",
@@ -349,7 +349,7 @@ export const ExamUpdateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["STUDENT", "SECTION", "SCHOOL"],
+                            enum: ["CLASS","STUDENT", "SECTION", "SCHOOL"],
                             description: "Type of target"
                         },
                         targetId: {
@@ -456,8 +456,8 @@ export const ExamAddSubjectsSchema = {
                     properties: {
                         subjectName: { type: "string" },
                         examDate: { type: "string", format: "date" },
-                        examStartTime: { type: "string", format: "time" },
-                        examEndTime: { type: "string", format: "time" },
+                        examStartTime: { type: "string", pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" },
+                        examEndTime: { type: "string", pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$" },
                         extras: { type: "object" }
                     }
                 }
@@ -492,13 +492,13 @@ export const ExamUpdateSubjectSchema = {
             },
             exam_start_time: {
                 type: "string",
-                format: "time",
-                description: "Exam start time (HH:MM:SS)"
+                pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                description: "Exam start time (HH:MM or HH:MM:SS)"
             },
             exam_end_time: {
                 type: "string",
-                format: "time",
-                description: "Exam end time (HH:MM:SS)"
+                pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+                description: "Exam end time (HH:MM or HH:MM:SS)"
             },
             extras: {
                 type: "object",
