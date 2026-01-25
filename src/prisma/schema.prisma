@@ -490,3 +490,73 @@ model HomeworkTarget {
   @@index([targetType, targetId])
 }
 
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+enum ExamTargetType {
+  STUDENT
+  SECTION
+  SCHOOL
+}
+
+model Exam {
+  id       String         @id @default(uuid())
+  examType String // configurable exam type (e.g., "Mid-Term", "Final", "Unit Test")
+  target   ExamTargetType // STUDENT | SECTION | SCHOOL
+  status   ExamStatus     @default(DRAFT) // DRAFT | PUBLISHED | COMPLETED
+  
+  // Grading details (for the whole exam)
+  gradingType String? // e.g., "Percentage", "Grade Points", "Pass/Fail"
+  gradingExtras Json? // Additional grading configuration
+  
+  createdBy String // Teacher/Admin ID
+  campusId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  subjects ExamSubject[]
+  targets  ExamTarget[]
+  
+  @@index([campusId])
+  @@index([examType])
+  @@index([target])
+  @@index([status])
+}
+
+model ExamSubject {
+  id            String   @id @default(uuid())
+  examId        String
+  subjectName   String
+  examDate      DateTime @db.Date
+  examStartTime DateTime @db.Time
+  examEndTime   DateTime @db.Time
+  
+  extras Json? // Additional subject-specific details
+  
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([examId])
+  @@index([examDate])
+}
+
+model ExamTarget {
+  id         String         @id @default(uuid())
+  examId     String
+  targetType ExamTargetType // STUDENT | SECTION | SCHOOL
+  targetId   String? // student_id, section_id, school_id (null for SCHOOL-level exams)
+  
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  @@index([examId])
+  @@index([targetType, targetId])
+}
+

@@ -5,7 +5,7 @@ import { getEndUserDetails } from "../../utils/cache/enduser.cache.js";
 const authHook = async (app) => {
   app.addHook("preHandler", async (req, reply) => {
     // Skip auth for these routes
-    if (req.url.includes("/login")) {
+    if (req.url.includes("/login") || req.url.includes("/signup")) {
       return;
     }
 

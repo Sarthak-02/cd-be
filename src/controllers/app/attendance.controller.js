@@ -1,6 +1,7 @@
 import { bulkCreateAttendance } from "../../services/app/attendance.service.js";
 import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service.js";
 import { getAttendanceDetailsBySection, getStudentAttendanceBySection } from "../../db/attendance.db.js";
+import { getActiveStudentsBySection } from "../../db/student.db.js";
 
 export async function bulk_create_attendance_post(req, reply) {
     try {
@@ -37,6 +38,13 @@ export async function get_attendance_details(req, reply) {
             });
         }
 
+        // Check if the provided date is today's date
+        const providedDate = new Date(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        providedDate.setHours(0, 0, 0, 0);
+        const isToday = providedDate.getTime() === today.getTime();
+
         const attendanceDetails = await getAttendanceDetailsBySection({
             sectionId: section_id,
             date,
@@ -44,8 +52,41 @@ export async function get_attendance_details(req, reply) {
             period
         });
 
+        // If no attendance records found and date is today, return student details
+        if ((!attendanceDetails || attendanceDetails.length === 0) && isToday) {
+            const students = await getActiveStudentsBySection(section_id);
+
+            if (students === null) {
+                throw new Error("Failed to fetch students");
+            }
+
+            // Format the response similar to students_by_section_get
+            const formattedStudents = students.map(student => ({
+                student_id: student.student_id,
+                name: [
+                    student.student_first_name,
+                    student.student_middle_name,
+                    student.student_last_name
+                ].filter(Boolean).join(' '),
+                profile_photo: student.student_photo_url,
+                gender: student.student_gender,
+                roll_number: student.student_roll_no,
+                admission_number: student.student_admission_no
+            }));
+
+            return reply.send({ 
+                success: true,
+                message: "No attendance records found. Returning student list.",
+                data: {
+                    is_attendance_taken: false,
+                    students: formattedStudents
+                }
+            });
+        }
+
+        // If no attendance records found and date is not today
         if (!attendanceDetails || attendanceDetails.length === 0) {
-            return reply.code(404).send({ 
+            return reply.code(200).send({ 
                 success: false, 
                 message: "No attendance records found for the specified criteria" 
             });
@@ -53,7 +94,7 @@ export async function get_attendance_details(req, reply) {
 
         reply.send({ 
             success: true, 
-            data: attendanceDetails 
+            data: attendanceDetails ? attendanceDetails[0] : {}
         });
     } catch (err) {
         console.error(err);

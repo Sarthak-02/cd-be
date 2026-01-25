@@ -21,6 +21,21 @@ export async function getSection(section_id) {
   }
 }
 
+export async function getSectionsByIds(section_ids,select={}) {
+  try {
+    return await prisma.section.findMany({
+      where: { section_id: { in: section_ids } },
+      select,
+      orderBy: {
+        section_name: "asc",
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 export async function getAllSections(omit={},filter={}) {
   try {
     return await prisma.section.findMany({omit,where:{}});

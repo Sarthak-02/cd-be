@@ -6,7 +6,7 @@ export async function bulkUpsertAttendanceRecords({
     updatedBy
   },tx=prisma) {
     try {
-      await prisma.$transaction(
+      await Promise.all(
         records.map(({ student_id, status }) =>
           tx.attendanceRecord.upsert({
             where: {
