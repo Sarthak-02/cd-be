@@ -44,8 +44,7 @@ export async function registerDeviceTokenController(req, reply) {
     }
     
     reply.code(500).send({ 
-      error: "Failed to register device token",
-      details: err.message 
+      error: "Failed to register device token"
     });
   }
 }
@@ -81,8 +80,7 @@ export async function unregisterDeviceTokenController(req, reply) {
     }
     
     reply.code(500).send({ 
-      error: "Failed to unregister device token",
-      details: err.message 
+      error: "Failed to unregister device token"
     });
   }
 }
@@ -112,8 +110,7 @@ export async function unregisterAllDeviceTokensController(req, reply) {
   } catch (err) {
     req.log.error(err);
     reply.code(500).send({ 
-      error: "Failed to unregister device tokens",
-      details: err.message 
+      error: "Failed to unregister device tokens"
     });
   }
 }
@@ -149,8 +146,7 @@ export async function getDeviceTokensController(req, reply) {
   } catch (err) {
     req.log.error(err);
     reply.code(500).send({ 
-      error: "Failed to fetch device tokens",
-      details: err.message 
+      error: "Failed to fetch device tokens"
     });
   }
 }
