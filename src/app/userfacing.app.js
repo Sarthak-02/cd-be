@@ -8,6 +8,7 @@ import teacherRoutes from '../routes/app/teacher.route.js'
 import homeworkRoutes from '../routes/app/homework.route.js'
 import examRoutes from '../routes/app/exam.route.js'
 import examGradeRoutes from '../routes/app/examGrade.route.js'
+import deviceTokenRoutes from '../routes/app/deviceToken.route.js'
 
 
 dotenv.config()
@@ -25,6 +26,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(homeworkRoutes)
       await appRoutes.register(examRoutes)
       await appRoutes.register(examGradeRoutes)
+      await appRoutes.register(deviceTokenRoutes, { prefix: '/device-token' })
      
     }, { prefix: '/app' })
   

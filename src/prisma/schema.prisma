@@ -424,6 +424,22 @@ model UserNotification {
   @@unique([notification_id, receiver_id]) // dedupe + idempotency
 }
 
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String   // Can be student_id, teacher_id, or parent_id
+  userType  EndUserRole // STUDENT | TEACHER | PARENT
+  token     String   @unique // FCM device token
+  platform  String?  // ios, android, web
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastUsedAt DateTime @default(now())
+  
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([userType])
+}
+
 model Subject {
   subject_id   String  @id @default(uuid())
   subject_name String
