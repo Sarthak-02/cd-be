@@ -655,3 +655,17 @@ export const ExamSendReminderSchema = {
         }
     }
 };
+
+export const ExamGetStudentsSchema = {
+    tags: ["Exam"],
+    params: {
+        type: "object",
+        required: ["exam_id"],
+        properties: {
+            exam_id: {
+                type: "string",
+                description: "Exam ID to get students for"
+            }
+        }
+    }
+};

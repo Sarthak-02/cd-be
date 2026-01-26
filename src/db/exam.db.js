@@ -88,7 +88,7 @@ export async function createExam({
  */
 export async function getExamById(examId) {
     try {
-        return await prisma.exam.findUnique({
+        const exam = await prisma.exam.findUnique({
             where: { id: examId },
             include: {
                 subjects: {
@@ -99,6 +99,33 @@ export async function getExamById(examId) {
                 targets: true
             }
         });
+
+        if (!exam) {
+            return null;
+        }
+
+        // For each subject, check if grades have been marked
+        const subjectsWithGradeInfo = await Promise.all(
+            exam.subjects.map(async (subject) => {
+                // Check if any grades exist for this subject
+                const gradeCount = await prisma.examGrade.count({
+                    where: {
+                        examSubjectId: subject.id
+                    }
+                });
+
+                return {
+                    ...subject,
+                    hasGradesMarked: gradeCount > 0,
+                    totalGradesMarked: gradeCount
+                };
+            })
+        );
+
+        return {
+            ...exam,
+            subjects: subjectsWithGradeInfo
+        };
     } catch (err) {
         console.error("Error fetching exam by ID:", err);
         return null;
@@ -805,5 +832,131 @@ export async function getOngoingExams({
     } catch (err) {
         console.error("Error fetching ongoing exams:", err);
         return [];
+    }
+}
+
+/**
+ * Get all students for an exam based on its targets
+ */
+export async function getStudentsForExam(examId) {
+    try {
+        // First, get the exam with its targets
+        const exam = await prisma.exam.findUnique({
+            where: { id: examId },
+            include: {
+                targets: true
+            }
+        });
+
+        if (!exam) {
+            return null;
+        }
+
+        // Collect all student IDs based on target types
+        const studentIds = new Set();
+
+        for (const target of exam.targets) {
+            if (target.targetType === "STUDENT") {
+                // Direct student target
+                studentIds.add(target.targetId);
+            } else if (target.targetType === "SECTION") {
+                // Get all students in the section
+                const students = await prisma.student.findMany({
+                    where: {
+                        student_section_id: target.targetId,
+                        student_current_status: "active"
+                    },
+                    select: {
+                        student_id: true
+                    }
+                });
+                students.forEach(s => studentIds.add(s.student_id));
+            } else if (target.targetType === "CLASS") {
+                // Get all sections for the class, then all students in those sections
+                const sections = await prisma.section.findMany({
+                    where: {
+                        class_id: target.targetId
+                    },
+                    select: {
+                        section_id: true
+                    }
+                });
+                
+                const sectionIds = sections.map(s => s.section_id);
+                
+                const students = await prisma.student.findMany({
+                    where: {
+                        student_section_id: {
+                            in: sectionIds
+                        },
+                        student_current_status: "active"
+                    },
+                    select: {
+                        student_id: true
+                    }
+                });
+                students.forEach(s => studentIds.add(s.student_id));
+            } else if (target.targetType === "SCHOOL") {
+                // Get all students for the school (via campus)
+                const campus = await prisma.campus.findFirst({
+                    where: {
+                        school_id: target.targetId
+                    },
+                    select: {
+                        campus_id: true
+                    }
+                });
+
+                if (campus) {
+                    const students = await prisma.student.findMany({
+                        where: {
+                            campus_id: campus.campus_id,
+                            student_current_status: "active"
+                        },
+                        select: {
+                            student_id: true
+                        }
+                    });
+                    students.forEach(s => studentIds.add(s.student_id));
+                }
+            }
+        }
+
+        // Now fetch full student details for all collected student IDs
+        const students = await prisma.student.findMany({
+            where: {
+                student_id: {
+                    in: Array.from(studentIds)
+                }
+            },
+            select: {
+                student_id: true,
+                student_first_name: true,
+                student_middle_name: true,
+                student_last_name: true,
+                student_roll_no: true,
+                student_photo_url: true,
+                student_admission_no: true
+            },
+            orderBy: {
+                student_roll_no: "asc"
+            }
+        });
+
+        // Format the response
+        return students.map(student => ({
+            student_id: student.student_id,
+            student_name: [
+                student.student_first_name,
+                student.student_middle_name,
+                student.student_last_name
+            ].filter(Boolean).join(" "),
+            student_roll_no: student.student_roll_no,
+            student_photo_url: student.student_photo_url,
+            student_admission_no: student.student_admission_no
+        }));
+    } catch (err) {
+        console.error("Error fetching students for exam:", err);
+        throw err;
     }
 }

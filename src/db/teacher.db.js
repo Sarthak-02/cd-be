@@ -13,7 +13,16 @@ export async function createTeacher(data) {
 export async function getTeacher(teacher_id) {
   try {
     return await prisma.teacher.findUnique({
-      where: { teacher_id }
+      where: { teacher_id },
+      include: {
+        campus: {
+          select: {
+            campus_id: true,
+            campus_name: true,
+            extras: true
+          }
+        }
+      }
     });
   } catch (err) {
     console.log(err);

@@ -33,22 +33,50 @@ export async function loginEndUser({ username, password }) {
   }
 
   let details = null;
-  let sections = null
+  let sections = null;
+  let campus = null;
+  
   if (user.role === "TEACHER") {
     details = await getTeacher(user.userid);
-    sections = details?.extras?.teacher_sections ?? []
+    sections = details?.extras?.teacher_sections ?? [];
+    
+    // Extract campus details from teacher
+    if (details?.campus) {
+      campus = {
+        campus_id: details.campus.campus_id,
+        campus_name: details.campus.campus_name,
+        term_start_date: details.campus.extras?.term_start_date || null,
+        term_end_date: details.campus.extras?.term_end_date || null
+      };
+      // Remove campus from details to avoid duplication
+      delete details.campus;
+    }
   } else if (user.role === "STUDENT") {
     details = await getStudent(user.userid);
-    sections = details?.student_section_id ? [details?.student_section_id] : []
+    sections = details?.student_section_id ? [details?.student_section_id] : [];
+    
+    // Extract campus details from student directly
+    if (details?.campus) {
+      campus = {
+        campus_id: details.campus.campus_id,
+        campus_name: details.campus.campus_name,
+        term_start_date: details.campus.extras?.term_start_date || null,
+        term_end_date: details.campus.extras?.term_end_date || null
+      };
+      // Remove campus from details to avoid duplication
+      delete details.campus;
+    }
   }
-  sections = await getSectionsByIds(sections,{section_name:true,section_id:true})
-  sections = sections?.map((section) => ({label:section.section_name , value: section.section_id}))
-
   
-  details['sections'] = sections
+  sections = await getSectionsByIds(sections,{section_name:true,section_id:true});
+  sections = sections?.map((section) => ({label:section.section_name , value: section.section_id}));
+
+  details['sections'] = sections;
+  
   const safeUser = {
     ...user,
-    details
+    details,
+    campus
   };
 
   delete safeUser.passwordHash;

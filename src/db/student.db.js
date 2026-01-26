@@ -13,7 +13,16 @@ export async function createStudent(data) {
 export async function getStudent(student_id) {
   try {
     return await prisma.student.findUnique({
-      where: { student_id }
+      where: { student_id },
+      include: {
+        campus: {
+          select: {
+            campus_id: true,
+            campus_name: true,
+            extras: true
+          }
+        }
+      }
     });
   } catch (err) {
     console.log(err);

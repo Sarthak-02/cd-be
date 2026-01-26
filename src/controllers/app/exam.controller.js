@@ -15,7 +15,8 @@ import {
     removeExamTarget,
     getExamStatsByCampus,
     getUpcomingExams,
-    getOngoingExams
+    getOngoingExams,
+    getStudentsForExam
 } from "../../db/exam.db.js";
 import { publishExamAndNotify, notifyExamUpdate, sendExamReminder } from "../../services/app/examNotify.service.js";
 
@@ -819,6 +820,36 @@ export async function send_exam_reminder(req, reply) {
         reply.code(500).send({
             success: false,
             message: err.message || "Unable to send exam reminder"
+        });
+    }
+}
+
+/**
+ * Get all students for an exam
+ */
+export async function get_students_for_exam(req, reply) {
+    try {
+        const { exam_id } = req.params;
+
+        const students = await getStudentsForExam(exam_id);
+
+        if (students === null) {
+            return reply.code(404).send({
+                success: false,
+                message: "Exam not found"
+            });
+        }
+
+        reply.send({
+            success: true,
+            data: students,
+            count: students.length
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: "Unable to fetch students for exam"
         });
     }
 }

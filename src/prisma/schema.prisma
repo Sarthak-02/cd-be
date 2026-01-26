@@ -245,7 +245,8 @@ model Student {
   attendanceRecords   AttendanceRecord[]
   parents             Parent[]
   homeworkSubmissions HomeworkSubmission[]
-
+  examGrades          ExamGrade[]
+  
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
@@ -546,6 +547,7 @@ model Exam {
   // Relations
   subjects ExamSubject[]
   targets  ExamTarget[]
+  grades   ExamGrade[]
   
   @@index([campusId])
   @@index([examType])
@@ -564,6 +566,7 @@ model ExamSubject {
   extras Json? // Additional subject-specific details
   
   exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  grades ExamGrade[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -582,5 +585,33 @@ model ExamTarget {
   
   @@index([examId])
   @@index([targetType, targetId])
+}
+
+model ExamGrade {
+  id              String   @id @default(uuid())
+  examId          String
+  examSubjectId   String
+  studentId       String
+  
+  // Grading details
+  gradesObtained  String?   // Actual marks scored
+  remarks         String?  // Teacher's comments/feedback
+  
+  // Grading metadata
+  gradedBy        String?  // Teacher ID who graded
+  gradedAt        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  exam           Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examSubject    ExamSubject  @relation(fields: [examSubjectId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+  
+  @@unique([examSubjectId, studentId]) // One grade per student per exam subject
+  @@index([examId])
+  @@index([examSubjectId])
+  @@index([studentId])
 }
 

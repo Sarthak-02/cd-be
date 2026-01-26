@@ -17,7 +17,8 @@ import {
     get_exam_stats,
     get_upcoming_exams,
     get_ongoing_exams,
-    send_exam_reminder
+    send_exam_reminder,
+    get_students_for_exam
 } from "../../controllers/app/exam.controller.js";
 
 import {
@@ -39,7 +40,8 @@ import {
     ExamGetStatsSchema,
     ExamGetUpcomingSchema,
     ExamGetOngoingSchema,
-    ExamSendReminderSchema
+    ExamSendReminderSchema,
+    ExamGetStudentsSchema
 } from "../../schemas/app/exam.schema.js";
 
 const examCreateOpts = {
@@ -163,6 +165,12 @@ const examSendReminderOpts = {
     }
 };
 
+const examGetStudentsOpts = {
+    schema: {
+        params: ExamGetStudentsSchema.params
+    }
+};
+
 async function examRoutes(app, options) {
     // Create exam
     app.post("/exam", examCreateOpts, create_exam);
@@ -198,6 +206,9 @@ async function examRoutes(app, options) {
 
     // Notifications
     app.post("/exam/:exam_id/reminder", examSendReminderOpts, send_exam_reminder);
+
+    // Students
+    app.get("/exam/:exam_id/students", examGetStudentsOpts, get_students_for_exam);
 }
 
 export default examRoutes;

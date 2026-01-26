@@ -87,7 +87,8 @@ export async function bulkCreateAttendance({
         },
         tx // pass transaction client
       );
-  
+      
+      console.log("attendanceSession", attendanceSession,date);
       // 2️⃣ Validate input
       if (!attendanceSession || !records?.length) {
         throw new Error("Invalid bulk attendance input");
