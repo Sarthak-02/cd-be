@@ -34,3 +34,17 @@ export const LoginRequestSchema = {
     type: "object"
   }
 };
+
+export const LogoutRequestSchema = {
+  tags: ["Auth"],
+  description: "Logout user and clear cache",
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        message: { type: "string" }
+      }
+    }
+  }
+};

@@ -12,7 +12,7 @@ export async function registerDeviceTokenController(req, reply) {
   try {
     const { token, platform } = req.body;
     const userInfo = req.token_info; // From auth hook
-
+    console.log("userInfo", userInfo.userid,userInfo.role);
     // Validate that user info exists
     if (!userInfo || !userInfo.id || !userInfo.role) {
       return reply.code(401).send({ 
@@ -22,7 +22,7 @@ export async function registerDeviceTokenController(req, reply) {
 
     // Create or update the device token
     const deviceToken = await upsertDeviceToken({
-      userId: userInfo.id,
+      userId: userInfo.userid,
       userType: userInfo.role,
       token,
       platform

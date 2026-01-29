@@ -1,5 +1,5 @@
-import { signupController, loginController } from "../../controllers/app/auth.controller.js";
-import { SignupRequestSchema, LoginRequestSchema } from "../../schemas/app/auth.schema.js";
+import { signupController, loginController, logoutController } from "../../controllers/app/auth.controller.js";
+import { SignupRequestSchema, LoginRequestSchema, LogoutRequestSchema } from "../../schemas/app/auth.schema.js";
 
 const signupOpts = {
   schema: {
@@ -13,7 +13,12 @@ const loginOpts = {
   }
 };
 
+const logoutOpts = {
+  schema: LogoutRequestSchema
+};
+
 export async function authRouter(app, options) {
   app.post("/signup", signupOpts, signupController);
   app.post("/login", loginOpts, loginController);
+  app.post("/logout", logoutOpts, logoutController);
 }

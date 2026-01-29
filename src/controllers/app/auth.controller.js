@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { getEndUserByUsername, createEndUser } from "../../db/enduser.db.js";
 import { loginEndUser } from "../../services/app/auth.service.js";
+import { clearEndUserCache } from "../../utils/cache/enduser.cache.js";
 
 export async function signupController(req, reply) {
   const { username, userid, password, role } = req.body;
@@ -77,5 +78,34 @@ export async function loginController(req, reply) {
     const status = err?.status || 500;
     const message = err?.message || "Unable to login";
     reply.code(status).send({ error: message });
+  }
+}
+
+export async function logoutController(req, reply) {
+  try {
+    const userInfo = req.token_info;
+
+    // Clear cache for the user
+    if (userInfo?.userid) {
+      await clearEndUserCache(userInfo.userid);
+    }
+
+    // Clear the cookie
+    reply.clearCookie("token", {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none"
+    });
+
+    reply.send({
+      success: true,
+      message: "Logged out successfully"
+    });
+  } catch (err) {
+    req.log.error(err);
+    reply.code(500).send({
+      error: "Failed to logout"
+    });
   }
 }

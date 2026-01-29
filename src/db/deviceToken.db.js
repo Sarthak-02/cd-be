@@ -4,6 +4,7 @@ import { prisma } from "../prisma/prisma.js";
  * Register a new device token or update existing one
  */
 export async function upsertDeviceToken(data) {
+  
   return prisma.deviceToken.upsert({
     where: {
       userId_token: {
