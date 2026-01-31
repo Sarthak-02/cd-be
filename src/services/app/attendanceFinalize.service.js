@@ -90,7 +90,7 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
                             attendanceStatus: r.status,
                         },
                         recipientType:"PARENT",
-                        receiverId:parent.parent_id,//it may be changed to parent id
+                        receiverId:student.student_id,//it may be changed to parent id
                         sourceType:"ATTENDANCE",
                         senderId:triggeredByTeacherId
                     });

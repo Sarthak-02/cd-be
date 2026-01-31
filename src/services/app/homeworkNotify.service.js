@@ -203,7 +203,7 @@ export async function publishHomeworkAndNotify({ homeworkId, triggeredByTeacherI
                             notificationType: "HOMEWORK_PUBLISHED"
                         },
                         recipientType: "PARENT",
-                        receiverId: parent.parent_id,
+                        receiverId: student.student_id,
                         sourceType: "HOMEWORK",
                         senderId: triggeredByTeacherId
                     });
