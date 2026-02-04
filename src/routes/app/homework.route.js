@@ -14,7 +14,8 @@ import {
     remove_homework_target,
     get_homework_stats,
     get_upcoming_homework,
-    get_overdue_homework
+    get_overdue_homework,
+    generate_attachment_upload_url
 } from "../../controllers/app/homework.controller.js";
 
 import {
@@ -33,7 +34,8 @@ import {
     HomeworkRemoveTargetSchema,
     HomeworkGetStatsSchema,
     HomeworkGetUpcomingSchema,
-    HomeworkGetOverdueSchema
+    HomeworkGetOverdueSchema,
+    HomeworkGenerateAttachmentUploadUrlSchema
 } from "../../schemas/app/homework.schema.js";
 
 const homeworkCreateOpts = {
@@ -137,9 +139,18 @@ const homeworkGetOverdueOpts = {
     }
 };
 
+const homeworkGenerateAttachmentUploadUrlOpts = {
+    schema: {
+        body: HomeworkGenerateAttachmentUploadUrlSchema.body
+    }
+};
+
 async function homeworkRoutes(app, options) {
     // Create homework
     app.post("/homework", homeworkCreateOpts, create_homework);
+
+    // Generate upload URL for attachments
+    app.post("/homework/attachment/upload-url", homeworkGenerateAttachmentUploadUrlOpts, generate_attachment_upload_url);
 
     // Get homework
     app.get("/homework/:homework_id", homeworkGetByIdOpts, get_homework_by_id);

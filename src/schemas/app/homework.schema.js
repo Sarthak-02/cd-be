@@ -497,3 +497,44 @@ export const HomeworkGetOverdueSchema = {
         }
     }
 };
+
+export const HomeworkGenerateAttachmentUploadUrlSchema = {
+    tags: ["Homework"],
+    body: {
+        type: "object",
+        required: ["file_name", "mime_type"],
+        properties: {
+            homework_id: {
+                type: "string",
+                description: "Homework ID (optional - if not provided, a temporary ID will be generated)"
+            },
+            file_name: {
+                type: "string",
+                minLength: 1,
+                description: "Name of the file to upload"
+            },
+            mime_type: {
+                type: "string",
+                enum: [
+                    "application/pdf",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "text/plain",
+                    "image/jpeg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/tiff",
+                    "image/bmp",
+                    "image/ico",                   
+                ],
+                description: "MIME type of the file"
+            }
+        }
+    }
+};

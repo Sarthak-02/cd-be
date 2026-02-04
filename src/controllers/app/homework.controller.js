@@ -17,6 +17,7 @@ import {
     getOverdueHomework
 } from "../../db/homework.db.js";
 import { publishHomeworkAndNotify, notifyHomeworkUpdate } from "../../services/app/homeworkNotify.service.js";
+import { generateDocumentUploadSignedUrl } from "../../services/gcsSignedUrl.js";
 
 /**
  * Create new homework
@@ -651,6 +652,78 @@ export async function get_overdue_homework(req, reply) {
         reply.code(500).send({
             success: false,
             message: "Unable to fetch overdue homework"
+        });
+    }
+}
+
+/**
+ * Generate signed URL for homework attachment upload
+ */
+export async function generate_attachment_upload_url(req, reply) {
+    try {
+        let { homework_id, file_name, mime_type } = req.body;
+
+        if (!file_name || !mime_type) {
+            return reply.code(400).send({
+                success: false,
+                message: "file_name and mime_type are required"
+            });
+        }
+
+        // Generate temporary ID if not provided
+        if (!homework_id) {
+            homework_id = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        }
+
+        // Validate mime type for documents and images
+        const allowedMimeTypes = [
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "text/plain",
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "image/svg+xml",
+            "image/tiff",
+            "image/bmp",
+            "image/ico"
+        ];
+
+        if (!allowedMimeTypes.includes(mime_type)) {
+            return reply.code(400).send({
+                success: false,
+                message: "Invalid file type. Only PDF, Word, Excel, PowerPoint, text files, and images are allowed."
+            });
+        }
+
+        const result = await generateDocumentUploadSignedUrl({
+            entity: "homework",
+            entityId: homework_id,
+            fileName: file_name,
+            mimeType: mime_type
+        });
+
+        reply.send({
+            success: true,
+            message: "Signed URL generated successfully",
+            data: {
+                homeworkId: homework_id,  // Return the homework_id (temp or provided)
+                uploadUrl: result.uploadUrl,
+                publicUrl: result.publicUrl,
+                objectPath: result.objectPath
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: err.message || "Unable to generate upload URL"
         });
     }
 }
