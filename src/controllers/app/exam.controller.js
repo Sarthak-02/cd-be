@@ -16,7 +16,9 @@ import {
     getExamStatsByCampus,
     getUpcomingExams,
     getOngoingExams,
-    getStudentsForExam
+    getStudentsForExam,
+    getExamGradesWithDetails,
+    getExamDetailsForStudent
 } from "../../db/exam.db.js";
 import { publishExamAndNotify, notifyExamUpdate, sendExamReminder } from "../../services/app/examNotify.service.js";
 
@@ -850,6 +852,75 @@ export async function get_students_for_exam(req, reply) {
         reply.code(500).send({
             success: false,
             message: "Unable to fetch students for exam"
+        });
+    }
+}
+
+/**
+ * Get all grades for an exam with subject details
+ */
+export async function get_exam_grades(req, reply) {
+    try {
+        const { exam_id } = req.query;
+
+        const gradesData = await getExamGradesWithDetails(exam_id);
+
+        if (gradesData === null) {
+            return reply.code(404).send({
+                success: false,
+                message: "Exam not found"
+            });
+        }
+
+        reply.send({
+            success: true,
+            data: gradesData
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: "Unable to fetch exam grades"
+        });
+    }
+}
+
+/**
+ * Get exam details with grades for a specific student
+ */
+export async function get_exam_details_for_student(req, reply) {
+    try {
+        const { exam_id, student_id } = req.query;
+
+        const examDetails = await getExamDetailsForStudent({
+            examId: exam_id,
+            studentId: student_id
+        });
+
+        if (examDetails === null) {
+            return reply.code(404).send({
+                success: false,
+                message: "Exam not found"
+            });
+        }
+
+        // Check if student is not eligible
+        if (examDetails.error === "STUDENT_NOT_ELIGIBLE") {
+            return reply.code(403).send({
+                success: false,
+                message: examDetails.message
+            });
+        }
+
+        reply.send({
+            success: true,
+            data: examDetails
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: "Unable to fetch exam details for student"
         });
     }
 }

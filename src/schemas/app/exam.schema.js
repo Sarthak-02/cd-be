@@ -669,3 +669,35 @@ export const ExamGetStudentsSchema = {
         }
     }
 };
+
+export const ExamGetGradesSchema = {
+    tags: ["Exam"],
+    querystring: {
+        type: "object",
+        required: ["exam_id"],
+        properties: {
+            exam_id: {
+                type: "string",
+                description: "Exam ID to fetch grades for"
+            }
+        }
+    }
+};
+
+export const ExamGetDetailsForStudentSchema = {
+    tags: ["Exam"],
+    querystring: {
+        type: "object",
+        required: ["exam_id", "student_id"],
+        properties: {
+            exam_id: {
+                type: "string",
+                description: "Exam ID"
+            },
+            student_id: {
+                type: "string",
+                description: "Student ID to fetch exam details and grades for"
+            }
+        }
+    }
+};

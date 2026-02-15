@@ -836,6 +836,277 @@ export async function getOngoingExams({
 }
 
 /**
+ * Get all grades for an exam grouped by subjects
+ */
+export async function getExamGradesWithDetails(examId) {
+    try {
+        // First, get the exam to verify it exists
+        const exam = await prisma.exam.findUnique({
+            where: { id: examId },
+            select: {
+                id: true,
+                examType: true,
+                status: true,
+                gradingType: true,
+                gradingExtras: true
+            }
+        });
+
+        if (!exam) {
+            return null;
+        }
+
+        // Get all subjects with their grades
+        const subjects = await prisma.examSubject.findMany({
+            where: { examId },
+            include: {
+                grades: {
+                    include: {
+                        student: {
+                            select: {
+                                student_id: true,
+                                student_first_name: true,
+                                student_middle_name: true,
+                                student_last_name: true,
+                                student_admission_no: true,
+                                student_roll_no: true,
+                                student_photo_url: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        student: {
+                            student_roll_no: "asc"
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                examDate: "asc"
+            }
+        });
+
+        // Format the response
+        const subjectsWithGrades = subjects.map(subject => {
+            const grades = subject.grades.map(grade => ({
+                grade_id: grade.id,
+                student_id: grade.studentId,
+                student_name: [
+                    grade.student.student_first_name,
+                    grade.student.student_middle_name,
+                    grade.student.student_last_name
+                ].filter(Boolean).join(" "),
+                student_roll_no: grade.student.student_roll_no,
+                student_admission_no: grade.student.student_admission_no,
+                student_photo_url: grade.student.student_photo_url,
+                grades_obtained: grade.gradesObtained,
+                remarks: grade.remarks,
+                graded_by: grade.gradedBy,
+                graded_at: grade.gradedAt
+            }));
+
+            // Calculate statistics
+            const gradedCount = grades.filter(g => g.grades_obtained !== null).length;
+            const totalCount = grades.length;
+
+            return {
+                subject_id: subject.id,
+                subject_name: subject.subjectName,
+                exam_date: subject.examDate,
+                exam_start_time: subject.examStartTime,
+                exam_end_time: subject.examEndTime,
+                extras: subject.extras,
+                total_students: totalCount,
+                graded_students: gradedCount,
+                pending_students: totalCount - gradedCount,
+                has_grades_marked: gradedCount > 0,
+                grades: grades
+            };
+        });
+
+        return {
+            exam_id: exam.id,
+            exam_type: exam.examType,
+            exam_status: exam.status,
+            grading_type: exam.gradingType,
+            grading_extras: exam.gradingExtras,
+            subjects: subjectsWithGrades
+        };
+    } catch (err) {
+        console.error("Error fetching exam grades with details:", err);
+        throw err;
+    }
+}
+
+/**
+ * Get exam details with grades for a specific student
+ */
+export async function getExamDetailsForStudent({ examId, studentId }) {
+    try {
+        // Get the exam with all basic details
+        const exam = await prisma.exam.findUnique({
+            where: { id: examId },
+            select: {
+                id: true,
+                examType: true,
+                target: true,
+                status: true,
+                gradingType: true,
+                gradingExtras: true,
+                createdBy: true,
+                campusId: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+
+        if (!exam) {
+            return null;
+        }
+
+        // Check if the student is eligible for this exam
+        const isEligible = await isStudentEligibleForExam(examId, studentId);
+        
+        if (!isEligible) {
+            return {
+                error: "STUDENT_NOT_ELIGIBLE",
+                message: "Student is not eligible for this exam"
+            };
+        }
+
+        // Get all subjects with grades for this student
+        const subjects = await prisma.examSubject.findMany({
+            where: { examId },
+            include: {
+                grades: {
+                    where: {
+                        studentId: studentId
+                    }
+                }
+            },
+            orderBy: {
+                examDate: "asc"
+            }
+        });
+
+        // Format subjects with grade info
+        const subjectsWithGrades = subjects.map(subject => {
+            const grade = subject.grades[0]; // Will be undefined if not graded yet
+            
+            return {
+                subject_id: subject.id,
+                subject_name: subject.subjectName,
+                exam_date: subject.examDate,
+                exam_start_time: subject.examStartTime,
+                exam_end_time: subject.examEndTime,
+                extras: subject.extras,
+                // Grade information
+                is_graded: !!grade,
+                grade_id: grade?.id || null,
+                grades_obtained: grade?.gradesObtained || null,
+                remarks: grade?.remarks || null,
+                graded_by: grade?.gradedBy || null,
+                graded_at: grade?.gradedAt || null
+            };
+        });
+
+        // Calculate overall statistics
+        const totalSubjects = subjectsWithGrades.length;
+        const gradedSubjects = subjectsWithGrades.filter(s => s.is_graded).length;
+        const pendingSubjects = totalSubjects - gradedSubjects;
+
+        return {
+            exam: {
+                exam_id: exam.id,
+                exam_type: exam.examType,
+                target: exam.target,
+                status: exam.status,
+                grading_type: exam.gradingType,
+                grading_extras: exam.gradingExtras,
+                created_by: exam.createdBy,
+                campus_id: exam.campusId,
+                created_at: exam.createdAt,
+                updated_at: exam.updatedAt
+            },
+            student_id: studentId,
+            statistics: {
+                total_subjects: totalSubjects,
+                graded_subjects: gradedSubjects,
+                pending_subjects: pendingSubjects,
+                completion_percentage: totalSubjects > 0 ? Math.round((gradedSubjects / totalSubjects) * 100) : 0
+            },
+            subjects: subjectsWithGrades
+        };
+    } catch (err) {
+        console.error("Error fetching exam details for student:", err);
+        throw err;
+    }
+}
+
+/**
+ * Helper function to check if a student is eligible for an exam
+ */
+async function isStudentEligibleForExam(examId, studentId) {
+    try {
+        // Get the exam targets
+        const exam = await prisma.exam.findUnique({
+            where: { id: examId },
+            include: {
+                targets: true
+            }
+        });
+
+        if (!exam) {
+            return false;
+        }
+
+        // Get student details
+        const student = await prisma.student.findUnique({
+            where: { student_id: studentId },
+            select: {
+                student_id: true,
+                student_section_id: true,
+                campus: {
+                    select: {
+                        school_id: true
+                    }
+                },
+                section: {
+                    select: {
+                        class_id: true
+                    }
+                }
+            }
+        });
+
+        if (!student) {
+            return false;
+        }
+
+        // Check if student is in any of the exam targets
+        for (const target of exam.targets) {
+            if (target.targetType === "STUDENT" && target.targetId === studentId) {
+                return true;
+            }
+            if (target.targetType === "SECTION" && target.targetId === student.student_section_id) {
+                return true;
+            }
+            if (target.targetType === "CLASS" && target.targetId === student.section?.class_id) {
+                return true;
+            }
+            if (target.targetType === "SCHOOL" && target.targetId === student.campus.school_id) {
+                return true;
+            }
+        }
+
+        return false;
+    } catch (err) {
+        console.error("Error checking student eligibility:", err);
+        return false;
+    }
+}
+
+/**
  * Get all students for an exam based on its targets
  */
 export async function getStudentsForExam(examId) {

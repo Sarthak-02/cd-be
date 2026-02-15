@@ -18,7 +18,9 @@ import {
     get_upcoming_exams,
     get_ongoing_exams,
     send_exam_reminder,
-    get_students_for_exam
+    get_students_for_exam,
+    get_exam_grades,
+    get_exam_details_for_student
 } from "../../controllers/app/exam.controller.js";
 
 import {
@@ -41,7 +43,9 @@ import {
     ExamGetUpcomingSchema,
     ExamGetOngoingSchema,
     ExamSendReminderSchema,
-    ExamGetStudentsSchema
+    ExamGetStudentsSchema,
+    ExamGetGradesSchema,
+    ExamGetDetailsForStudentSchema
 } from "../../schemas/app/exam.schema.js";
 
 const examCreateOpts = {
@@ -171,6 +175,18 @@ const examGetStudentsOpts = {
     }
 };
 
+const examGetGradesOpts = {
+    schema: {
+        querystring: ExamGetGradesSchema.querystring
+    }
+};
+
+const examGetDetailsForStudentOpts = {
+    schema: {
+        querystring: ExamGetDetailsForStudentSchema.querystring
+    }
+};
+
 async function examRoutes(app, options) {
     // Create exam
     app.post("/exam", examCreateOpts, create_exam);
@@ -209,6 +225,12 @@ async function examRoutes(app, options) {
 
     // Students
     app.get("/exam/:exam_id/students", examGetStudentsOpts, get_students_for_exam);
+
+    // Grades
+    app.get("/exam/grades/all", examGetGradesOpts, get_exam_grades);
+    
+    // Student-specific exam details with grades
+    app.get("/exam/student/details", examGetDetailsForStudentOpts, get_exam_details_for_student);
 }
 
 export default examRoutes;
