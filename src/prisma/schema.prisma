@@ -368,6 +368,7 @@ model Notification {
   lastError  String?
   queuedAt   DateTime?
   sentAt     DateTime?
+  read       Boolean            @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
