@@ -7,7 +7,7 @@ dispatch:
     service: control-desk-backend
 
   # Route all /app/* requests to user-facing-backend
-  - url: "*/app/*"
+  - url: "*/userfacing/*"
     service: user-facing-backend
   # Route all /app requests to the user-facing-app service
   - url: "*/app/*"
@@ -26,6 +26,7 @@ dispatch:
     service: control-desk-web
 
 
+
   # Optional: Route root and other paths to a default service if needed
-  # - url: "*/"
-  #   service: default
+  - url: "*/"
+    service: default

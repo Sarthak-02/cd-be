@@ -30,7 +30,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(deviceTokenRoutes, { prefix: '/device-token' })
       await appRoutes.register(notificationRoutes)
      
-    }, { prefix: '/app' })
+    }, { prefix: '/userfacing' })
   
     return app
   }
