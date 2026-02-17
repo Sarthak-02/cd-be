@@ -46,8 +46,7 @@ fastify.get('/*', async (request, reply) => {
 </head>
 <body>
     <div class="container">
-        <h1>Campus360</h1>
-        <p>Welcome</p>
+        <h1>Welcome to Vidyaarohan</h1>
     </div>
 </body>
 </html>
