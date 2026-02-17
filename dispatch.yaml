@@ -1,0 +1,31 @@
+# dispatch.yaml - Route incoming requests to appropriate services
+# This file must be deployed to the default service
+
+dispatch:
+  # Route all /onboarding/* requests to control-desk-backend
+  - url: "*/onboarding/*"
+    service: control-desk-backend
+
+  # Route all /app/* requests to user-facing-backend
+  - url: "*/app/*"
+    service: user-facing-backend
+  # Route all /app requests to the user-facing-app service
+  - url: "*/app/*"
+    service: user-facing-app
+  
+  # Route /app (without trailing slash) to the user-facing-app service
+  - url: "*/app"
+    service: user-facing-app
+  
+   # Route all requests starting with /control-desk-web/ to control-desk-web service
+  - url: "*/control-desk-web/*"
+    service: control-desk-web
+  
+  # Alternative: If you also want the exact path without trailing slash
+  - url: "*/control-desk-web"
+    service: control-desk-web
+
+
+  # Optional: Route root and other paths to a default service if needed
+  # - url: "*/"
+  #   service: default

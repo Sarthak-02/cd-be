@@ -5,8 +5,15 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "dev:userfacing": "nodemon server.userfacing.js",
+    "dev:onboarding": "nodemon server.onboarding.js",
     "start": "node src/server.js",
-    "postinstall": "prisma generate"
+    "start:userfacing": "node server.userfacing.js",
+    "start:onboarding": "node server.onboarding.js",
+    "postinstall": "prisma generate",
+    "deploy:userfacing": "gcloud app deploy app.yaml",
+    "deploy:onboarding": "gcloud app deploy app.control-desk.yaml",
+    "deploy:all": "gcloud app deploy app.yaml app.control-desk.yaml"
   },
   "dependencies": {
     "@fastify/ajv-compiler": "^4.0.5",
