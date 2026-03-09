@@ -2,9 +2,25 @@ import { prisma } from "../prisma/prisma.js";
 
 /**
  * Register a new device token or update existing one
+ * If the token is already associated with a different user, it will be reassigned
  */
 export async function upsertDeviceToken(data) {
-  
+  // First, check if this token exists for a different user
+  const existingToken = await prisma.deviceToken.findFirst({
+    where: {
+      token: data.token,
+      userId: { not: data.userId }
+    }
+  });
+
+  // If token belongs to another user, delete it first
+  if (existingToken) {
+    await prisma.deviceToken.delete({
+      where: { id: existingToken.id }
+    });
+  }
+
+  // Now upsert the token for the current user
   return prisma.deviceToken.upsert({
     where: {
       userId_token: {
@@ -14,6 +30,7 @@ export async function upsertDeviceToken(data) {
     },
     update: {
       platform: data.platform,
+      userType: data.userType,
       lastUsedAt: new Date(),
       updatedAt: new Date()
     },

@@ -12,13 +12,20 @@ export async function registerDeviceTokenController(req, reply) {
   try {
     const { token, platform } = req.body;
     const userInfo = req.token_info; // From auth hook
-    console.log("userInfo", userInfo.userid,userInfo.role);
+    
     // Validate that user info exists
-    if (!userInfo || !userInfo.id || !userInfo.role) {
+    if (!userInfo || !userInfo.userid || !userInfo.role) {
       return reply.code(401).send({ 
         error: "Unauthorized: User information not found" 
       });
     }
+
+    console.log("Registering device token for user:", {
+      userid: userInfo.userid,
+      role: userInfo.role,
+      platform,
+      tokenPreview: `...${token.slice(-10)}`
+    });
 
     // Create or update the device token
     const deviceToken = await upsertDeviceToken({
@@ -26,6 +33,11 @@ export async function registerDeviceTokenController(req, reply) {
       userType: userInfo.role,
       token,
       platform
+    });
+
+    console.log("Device token operation result:", {
+      operation: deviceToken.createdAt.getTime() === deviceToken.updatedAt.getTime() ? 'created' : 'updated',
+      deviceTokenId: deviceToken.id
     });
 
     reply.code(200).send({
@@ -44,7 +56,8 @@ export async function registerDeviceTokenController(req, reply) {
     }
     
     reply.code(500).send({ 
-      error: "Failed to register device token"
+      error: "Failed to register device token",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 }
@@ -57,13 +70,13 @@ export async function unregisterDeviceTokenController(req, reply) {
     const { token } = req.body;
     const userInfo = req.token_info; // From auth hook
 
-    if (!userInfo || !userInfo.id) {
+    if (!userInfo || !userInfo.userid) {
       return reply.code(401).send({ 
         error: "Unauthorized: User information not found" 
       });
     }
 
-    await deleteDeviceToken(userInfo.id, token);
+    await deleteDeviceToken(userInfo.userid, token);
 
     reply.code(200).send({
       success: true,
@@ -92,13 +105,13 @@ export async function unregisterAllDeviceTokensController(req, reply) {
   try {
     const userInfo = req.token_info; // From auth hook
 
-    if (!userInfo || !userInfo.id) {
+    if (!userInfo || !userInfo.userid) {
       return reply.code(401).send({ 
         error: "Unauthorized: User information not found" 
       });
     }
 
-    const result = await deleteAllUserDeviceTokens(userInfo.id);
+    const result = await deleteAllUserDeviceTokens(userInfo.userid);
 
     reply.code(200).send({
       success: true,
@@ -122,13 +135,13 @@ export async function getDeviceTokensController(req, reply) {
   try {
     const userInfo = req.token_info; // From auth hook
 
-    if (!userInfo || !userInfo.id) {
+    if (!userInfo || !userInfo.userid) {
       return reply.code(401).send({ 
         error: "Unauthorized: User information not found" 
       });
     }
 
-    const tokens = await getUserDeviceTokens(userInfo.id);
+    const tokens = await getUserDeviceTokens(userInfo.userid);
 
     // Remove sensitive full token, show only last 10 chars for reference
     const sanitizedTokens = tokens.map(t => ({
