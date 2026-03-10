@@ -48,3 +48,26 @@ export const LogoutRequestSchema = {
     }
   }
 };
+
+export const ChangePasswordRequestSchema = {
+  tags: ["Auth"],
+  description: "Change user password",
+  body: {
+    type: "object",
+    required: ["currentPassword", "newPassword"],
+    properties: {
+      currentPassword: { type: "string", minLength: 1 },
+      newPassword: { type: "string", minLength: 6 }
+    },
+    additionalProperties: false
+  },
+  response: {
+    200: {
+      type: "object",
+      properties: {
+        success: { type: "boolean" },
+        message: { type: "string" }
+      }
+    }
+  }
+};

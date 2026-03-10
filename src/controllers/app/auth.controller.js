@@ -109,3 +109,71 @@ export async function logoutController(req, reply) {
     });
   }
 }
+
+export async function changePasswordController(req, reply) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userInfo = req.token_info;
+
+    if (!userInfo || !userInfo.userid) {
+      return reply.code(401).send({ 
+        error: "Unauthorized: User information not found" 
+      });
+    }
+
+    const user = await getEndUserByUsername(userInfo.username);
+    
+    if (!user) {
+      return reply.code(404).send({ 
+        error: "User not found" 
+      });
+    }
+
+    if (!user.passwordHash) {
+      return reply.code(400).send({ 
+        error: "Password change not available for this account" 
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    
+    if (!isCurrentPasswordValid) {
+      return reply.code(401).send({ 
+        error: "Current password is incorrect" 
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return reply.code(400).send({ 
+        error: "New password must be different from current password" 
+      });
+    }
+
+    const saltRounds = 10;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    const { updateEndUserByUserid } = await import("../../db/enduser.db.js");
+    const updatedUser = await updateEndUserByUserid(userInfo.userid, {
+      passwordHash: newPasswordHash
+    });
+
+    if (!updatedUser) {
+      return reply.code(500).send({ 
+        error: "Failed to update password" 
+      });
+    }
+
+    await clearEndUserCache(userInfo.userid);
+
+    reply.send({
+      success: true,
+      message: "Password changed successfully"
+    });
+  } catch (err) {
+    req.log.error(err);
+    reply.code(500).send({
+      error: "Failed to change password",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+}
