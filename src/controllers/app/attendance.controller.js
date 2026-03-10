@@ -27,6 +27,26 @@ export async function bulk_create_attendance_post(req, reply) {
     }
   }
 
+
+export function checkToday(date) {
+    if (!date) return false;
+
+    // Get current date in IST timezone
+    const today = new Date();
+    const istFormatter = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    
+    // Format both dates to IST and compare
+    const todayIST = istFormatter.format(today);
+    const inputDateIST = istFormatter.format(date);
+    
+    return todayIST === inputDateIST;
+}
+
 export async function get_attendance_details(req, reply) {
     try {
         const { section_id, date, campus_session, period } = req.query;
@@ -37,13 +57,8 @@ export async function get_attendance_details(req, reply) {
                 message: "section_id and date are required" 
             });
         }
-
-        // Check if the provided date is today's date
-        const providedDate = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        providedDate.setHours(0, 0, 0, 0);
-        const isToday = providedDate.getTime() === today.getTime();
+        
+        const isToday = checkToday(new Date(date))
 
         const attendanceDetails = await getAttendanceDetailsBySection({
             sectionId: section_id,
