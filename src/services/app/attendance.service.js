@@ -125,4 +125,33 @@ export async function bulkCreateAttendance({
       );
     });
   }
+
+/**
+ * Get today's schedule entries for a section
+ * @param {Object} data - Section timetable data with days, slots, and entries
+ * @returns {Array} Today's schedule entries with timing details
+ */
+export function getTodayEntries(data) {
+  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+  // find today's day object
+  const todayDay = data.days.find(day => day.label === todayLabel && day.isActive);
+  if (!todayDay) return [];
+
+  // filter entries for today
+  const todayEntries = data.entries.filter(entry => entry.dayId === todayDay.id);
+
+  // map entries with slot timings
+  return todayEntries.map(entry => {
+    const slot = data.slots.find(s => s.id === entry.slotId);
+
+    return {
+      subject: entry.subject,
+      teacher: entry.teacher,
+      room: entry.room,
+      startTime: slot?.startTime,
+      endTime: slot?.endTime
+    };
+  });
+}
   

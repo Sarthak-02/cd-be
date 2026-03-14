@@ -85,3 +85,17 @@ export const StudentAttendanceGetSchema = {
     }
   }
 }
+
+export const TodayScheduleGetSchema = {
+  tags: ["Attendance"],
+  querystring: {
+    type: "object",
+    required: ["section_id"],
+    properties: {
+      section_id: { 
+        type: "string",
+        description: "Section ID to fetch today's schedule for"
+      }
+    }
+  }
+}

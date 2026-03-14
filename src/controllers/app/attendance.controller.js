@@ -1,7 +1,8 @@
-import { bulkCreateAttendance } from "../../services/app/attendance.service.js";
+import { bulkCreateAttendance, getTodayEntries } from "../../services/app/attendance.service.js";
 import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service.js";
 import { getAttendanceDetailsBySection, getStudentAttendanceBySection } from "../../db/attendance.db.js";
 import { getActiveStudentsBySection } from "../../db/student.db.js";
+import { getSection } from "../../db/section.db.js";
 
 export async function bulk_create_attendance_post(req, reply) {
     try {
@@ -201,6 +202,56 @@ export async function get_student_attendance(req, reply) {
         reply.code(500).send({ 
             success: false, 
             message: "Unable to fetch student attendance records" 
+        });
+    }
+}
+
+export async function get_today_schedule(req, reply) {
+    try {
+        const { section_id } = req.query;
+
+        if (!section_id) {
+            return reply.code(400).send({ 
+                success: false, 
+                message: "section_id is required" 
+            });
+        }
+
+        const section = await getSection(section_id);
+
+        if (!section) {
+            return reply.code(404).send({ 
+                success: false, 
+                message: "Section not found" 
+            });
+        }
+
+        // Check if section has timetable data in extras
+        if (!section.extras || !section.extras.days || !section.extras.slots || !section.extras.entries) {
+            return reply.send({ 
+                success: true, 
+                message: "No timetable configured for this section",
+                data: {
+                    schedule: []
+                }
+            });
+        }
+
+        const todaySchedule = getTodayEntries(section.extras);
+
+        reply.send({ 
+            success: true, 
+            data: {
+                section_id: section.section_id,
+                section_name: section.section_name,
+                schedule: todaySchedule
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({ 
+            success: false, 
+            message: "Unable to fetch today's schedule" 
         });
     }
 }
