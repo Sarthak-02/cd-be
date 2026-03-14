@@ -132,15 +132,17 @@ export async function bulkCreateAttendance({
  * @returns {Array} Today's schedule entries with timing details
  */
 export function getTodayEntries(data) {
-  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-
+  let todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  todayLabel = 'Monday'
+  console.log("todayLabel",todayLabel);
   // find today's day object
   const todayDay = data.days.find(day => day.label === todayLabel && day.isActive);
+  console.log("todayDay",todayDay);
   if (!todayDay) return [];
 
   // filter entries for today
   const todayEntries = data.entries.filter(entry => entry.dayId === todayDay.id);
-
+  console.log("todayEntries",todayEntries);
   // map entries with slot timings
   return todayEntries.map(entry => {
     const slot = data.slots.find(s => s.id === entry.slotId);

@@ -49,6 +49,7 @@ export async function loginEndUser({ username, password }) {
         term_end_date: details.campus.extras?.term_end_date || null,
         campus_exam_types: details.campus.extras?.campus_exam_types || null,
         class_grading_config: details.campus.extras?.class_grading_config || null,
+        attendance_slots: details.campus.extras?.attendance_slots || null,
       };
       // Remove campus from details to avoid duplication
       delete details.campus;

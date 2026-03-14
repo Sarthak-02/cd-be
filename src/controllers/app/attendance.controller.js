@@ -208,12 +208,27 @@ export async function get_student_attendance(req, reply) {
 
 export async function get_today_schedule(req, reply) {
     try {
-        const { section_id } = req.query;
+        const { section_id, attendance_slots } = req.body;
 
         if (!section_id) {
             return reply.code(400).send({ 
                 success: false, 
                 message: "section_id is required" 
+            });
+        }
+
+        if (!attendance_slots) {
+            return reply.code(400).send({ 
+                success: false, 
+                message: "attendance_slots is required" 
+            });
+        }
+
+        const validSlotTypes = ['daily', 'half_day', 'period'];
+        if (!validSlotTypes.includes(attendance_slots)) {
+            return reply.code(400).send({ 
+                success: false, 
+                message: "attendance_slots must be one of: daily, half_day, period" 
             });
         }
 
@@ -226,26 +241,46 @@ export async function get_today_schedule(req, reply) {
             });
         }
 
-        // Check if section has timetable data in extras
-        if (!section.extras || !section.extras.days || !section.extras.slots || !section.extras.entries) {
-            return reply.send({ 
-                success: true, 
-                message: "No timetable configured for this section",
-                data: {
-                    schedule: []
-                }
-            });
-        }
+        let responseData = {
+            section_id: section.section_id,
+            section_name: section.section_name,
+            attendance_slots: attendance_slots
+        };
 
-        const todaySchedule = getTodayEntries(section.extras);
+        if (attendance_slots === 'daily') {
+            responseData.slots = [{
+                value: 'daily',
+                label: 'Daily'
+              }];
+        } else if (attendance_slots === 'half_day') {
+            responseData.slots = [{
+                value: 'first_half',
+                label: 'First Half'
+              },
+              {
+                value: 'second_half',
+                label: 'Second Half'
+              }];
+        } else if (attendance_slots === 'period') {
+            // Check if section has timetable data in extras
+            const timetable = section.extras.timetable;
+            // console.log("timetable",timetable);
+            if (!timetable) {
+                responseData.slots = [{
+                    value: 'daily',
+                    label: 'Daily'
+                  }];
+                responseData.message = "No timetable configured for this section";
+            } else {
+                
+                const todaySchedule = getTodayEntries(timetable);
+                responseData.slots = todaySchedule;
+            }
+        }
 
         reply.send({ 
             success: true, 
-            data: {
-                section_id: section.section_id,
-                section_name: section.section_name,
-                schedule: todaySchedule
-            }
+            data: responseData
         });
     } catch (err) {
         console.error(err);

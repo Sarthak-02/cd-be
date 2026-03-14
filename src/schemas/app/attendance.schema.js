@@ -88,13 +88,18 @@ export const StudentAttendanceGetSchema = {
 
 export const TodayScheduleGetSchema = {
   tags: ["Attendance"],
-  querystring: {
+  body: {
     type: "object",
-    required: ["section_id"],
+    required: ["section_id", "attendance_slots"],
     properties: {
       section_id: { 
         type: "string",
         description: "Section ID to fetch today's schedule for"
+      },
+      attendance_slots: {
+        type: "string",
+        enum: ["daily", "half_day", "period"],
+        description: "Type of attendance slots: 'daily' for single daily slot, 'half day' for first/second half, 'period' for period-wise schedule"
       }
     }
   }

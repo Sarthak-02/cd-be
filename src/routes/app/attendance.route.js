@@ -22,7 +22,7 @@ const studentAttendanceGetOpts = {
 
 const todayScheduleGetOpts = {
     schema: {
-        querystring: TodayScheduleGetSchema.querystring
+        body: TodayScheduleGetSchema.body
     }
 };
 
@@ -31,7 +31,7 @@ async function attendanceRoutes(app, options) {
     app.post("/attendance/bulk_create", attendanceBulkCreateOpts, bulk_create_attendance_post);
     app.get("/attendance/details", attendanceGetDetailsOpts, get_attendance_details);
     app.post("/attendance/student", studentAttendanceGetOpts, get_student_attendance);
-    app.get("/attendance/today-schedule", todayScheduleGetOpts, get_today_schedule);
+    app.post("/attendance/today-schedule", todayScheduleGetOpts, get_today_schedule);
 
     //   app.get("/logout",{},logoutController)
 }
