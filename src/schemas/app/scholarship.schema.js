@@ -109,3 +109,42 @@ export const ScholarshipDeleteSchema = {
     },
   },
 };
+
+/** Scraper / import payload items (maps to DB in controller). */
+const scholarshipImportItemSchema = {
+  type: "object",
+  required: ["scholarship_name", "category", "content_hash"],
+  properties: {
+    scholarship_name: { type: "string", minLength: 1 },
+    provider: { type: "string" },
+    category: { type: "string", minLength: 1 },
+    classes: {},
+    eligibility_summary: { type: "string" },
+    benefit_summary: { type: "string" },
+    application_dates: { type: "string" },
+    details_url: { type: "string" },
+    source_name: { type: "string" },
+    raw_text_excerpt: { type: "string" },
+    page_title: { type: "string" },
+    scraped_at: { type: "string" },
+    content_hash: { type: "string", minLength: 1 },
+    source_type: { type: "string" },
+    target_group: { type: "array", items: { type: "string" } },
+    academic_year: { type: "string" },
+    status: { type: "string", enum: scholarshipStatusEnum },
+    open_date: { type: ["string", "null"] },
+    close_date: { type: ["string", "null"] },
+    announcement_url: { type: "string" },
+    last_checked_at: { type: "string" },
+    raw_title: { type: "string" },
+  },
+  additionalProperties: true,
+};
+
+export const ScholarshipBulkImportSchema = {
+  body: {
+    type: "array",
+    minItems: 1,
+    items: scholarshipImportItemSchema,
+  },
+};

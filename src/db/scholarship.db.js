@@ -52,28 +52,47 @@ function intersectSets(a, b) {
  * @param {string} data.contentHash
  * @param {string|null} [data.rawTitle]
  */
+function scholarshipCreateData(data) {
+  return {
+    sourceName: data.sourceName,
+    sourceType: data.sourceType,
+    scholarshipName: data.scholarshipName,
+    category: data.category,
+    classes: data.classes,
+    targetGroup: data.targetGroup,
+    academicYear: data.academicYear,
+    status: data.status,
+    openDate: parseDateOnly(data.openDate),
+    closeDate: parseDateOnly(data.closeDate),
+    benefitSummary: data.benefitSummary ?? null,
+    eligibilitySummary: data.eligibilitySummary ?? null,
+    detailsUrl: data.detailsUrl ?? null,
+    announcementUrl: data.announcementUrl ?? null,
+    lastCheckedAt: parseDateTime(data.lastCheckedAt),
+    contentHash: data.contentHash,
+    rawTitle: data.rawTitle ?? null,
+  };
+}
+
 export async function createScholarship(data) {
   return prisma.scholarship.create({
-    data: {
-      sourceName: data.sourceName,
-      sourceType: data.sourceType,
-      scholarshipName: data.scholarshipName,
-      category: data.category,
-      classes: data.classes,
-      targetGroup: data.targetGroup,
-      academicYear: data.academicYear,
-      status: data.status,
-      openDate: parseDateOnly(data.openDate),
-      closeDate: parseDateOnly(data.closeDate),
-      benefitSummary: data.benefitSummary ?? null,
-      eligibilitySummary: data.eligibilitySummary ?? null,
-      detailsUrl: data.detailsUrl ?? null,
-      announcementUrl: data.announcementUrl ?? null,
-      lastCheckedAt: parseDateTime(data.lastCheckedAt),
-      contentHash: data.contentHash,
-      rawTitle: data.rawTitle ?? null,
-    },
+    data: scholarshipCreateData(data),
   });
+}
+
+/**
+ * @param {object[]} dataRows - same shape as createScholarship input (camelCase)
+ * @returns {{ inserted: number, attempted: number }}
+ */
+export async function createScholarshipsBulk(dataRows) {
+  if (!dataRows.length) {
+    return { inserted: 0, attempted: 0 };
+  }
+  const result = await prisma.scholarship.createMany({
+    data: dataRows.map(scholarshipCreateData),
+    skipDuplicates: true,
+  });
+  return { inserted: result.count, attempted: dataRows.length };
 }
 
 export async function getScholarshipById(id) {
