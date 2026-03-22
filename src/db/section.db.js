@@ -21,14 +21,24 @@ export async function getSection(section_id) {
   }
 }
 
-export async function getSectionsByIds(section_ids,select={}) {
+export async function getSectionsByIds(section_ids, select = {}) {
   try {
+    const orderBy = { section_name: "asc" };
+    const where = { section_id: { in: section_ids } };
+    const classNameRelation = {
+      classRef: { select: { class_name: true } },
+    };
+    if (Object.keys(select).length > 0) {
+      return await prisma.section.findMany({
+        where,
+        select: { ...select, ...classNameRelation },
+        orderBy,
+      });
+    }
     return await prisma.section.findMany({
-      where: { section_id: { in: section_ids } },
-      select,
-      orderBy: {
-        section_name: "asc",
-      },
+      where,
+      include: classNameRelation,
+      orderBy,
     });
   } catch (err) {
     console.log(err);
