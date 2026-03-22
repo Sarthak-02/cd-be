@@ -632,3 +632,38 @@ model ExamGrade {
   @@index([studentId])
 }
 
+enum ScholarshipStatus {
+  OPEN
+  CLOSED
+  EXTENDED
+  UPCOMING
+}
+
+model Scholarship {
+  id                 String            @id @default(uuid())
+  sourceName         String
+  sourceType         String
+  scholarshipName    String
+  category           String
+  classes            Json
+  targetGroup        Json
+  academicYear       String
+  status             ScholarshipStatus
+  openDate           DateTime?         @db.Date
+  closeDate          DateTime?         @db.Date
+  benefitSummary     String?           @db.Text
+  eligibilitySummary String?           @db.Text
+  detailsUrl         String?
+  announcementUrl    String?
+  lastCheckedAt      DateTime?
+  contentHash        String            @unique
+  rawTitle           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([academicYear])
+  @@index([status])
+  @@index([category])
+  @@index([sourceType])
+}
