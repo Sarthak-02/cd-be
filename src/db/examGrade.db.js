@@ -242,7 +242,8 @@ export async function getGradesByStudent({
                         id: true,
                         examType: true,
                         status: true,
-                        gradingType: true
+                        gradingType: true,
+                        gradingExtras: true
                     }
                 }
             },
