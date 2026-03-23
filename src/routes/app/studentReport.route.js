@@ -58,7 +58,7 @@ async function studentReportRoutes(app) {
         "/students/:student_id/report/exams/:exam_id",
         studentReportExamOpts,
         student_report_exam_get
-    ); d
+    ); 
 }
 
 export default studentReportRoutes;
