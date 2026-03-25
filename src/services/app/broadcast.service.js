@@ -170,9 +170,60 @@ export async function listBroadcasts(campusId, createdBy) {
   });
 }
 
+async function enrichBroadcastsForReceiver(broadcasts) {
+  const senderIds = [...new Set(broadcasts.map((b) => b.createdBy))];
+
+  const [users, teachers] = await Promise.all([
+    prisma.user.findMany({
+      where: { userid: { in: senderIds } },
+      select: { userid: true, username: true },
+    }),
+    prisma.teacher.findMany({
+      where: { teacher_id: { in: senderIds } },
+      select: {
+        teacher_id: true,
+        teacher_first_name: true,
+        teacher_middle_name: true,
+        teacher_last_name: true,
+      },
+    }),
+  ]);
+
+  const senderMap = new Map();
+
+  users.forEach((user) => {
+    senderMap.set(user.userid, user.username);
+  });
+
+  teachers.forEach((teacher) => {
+    const fullName = [
+      teacher.teacher_first_name,
+      teacher.teacher_middle_name,
+      teacher.teacher_last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    senderMap.set(teacher.teacher_id, fullName);
+  });
+
+  return broadcasts.map((broadcast) => ({
+    id: broadcast.id,
+    title: broadcast.title,
+    message: broadcast.message,
+    createdBy: broadcast.createdBy,
+    senderName: senderMap.get(broadcast.createdBy) || "Unknown",
+    campusId: broadcast.campusId,
+    status: broadcast.status,
+    hasAttachments: broadcast.broadcastAttachments.length > 0,
+    attachmentCount: broadcast.broadcastAttachments.length,
+    attachments: broadcast.broadcastAttachments,
+    createdAt: broadcast.createdAt,
+    submittedAt: broadcast.submittedAt,
+  }));
+}
+
 // Fetch broadcasts received by a user (via Notification table)
 export async function getBroadcastsByReceiverId(receiverId, campusId) {
-  // Find all notifications for this receiver where sourceType = "BROADCAST"
   const notifications = await prisma.notification.findMany({
     where: {
       receiverId,
@@ -190,7 +241,6 @@ export async function getBroadcastsByReceiverId(receiverId, campusId) {
     return [];
   }
 
-  // Fetch the actual broadcast notifications with attachments
   const broadcasts = await prisma.broadcastNotification.findMany({
     where: {
       id: { in: broadcastIds },
@@ -210,58 +260,66 @@ export async function getBroadcastsByReceiverId(receiverId, campusId) {
     orderBy: { createdAt: "desc" },
   });
 
-  // Get unique sender IDs
-  const senderIds = [...new Set(broadcasts.map((b) => b.createdBy))];
+  return enrichBroadcastsForReceiver(broadcasts);
+}
 
-  // Fetch sender details from multiple possible sources
-  const [users, teachers] = await Promise.all([
-    prisma.user.findMany({
-      where: { userid: { in: senderIds } },
-      select: { userid: true, username: true },
-    }),
-    prisma.teacher.findMany({
-      where: { teacher_id: { in: senderIds } },
-      select: {
-        teacher_id: true,
-        teacher_first_name: true,
-        teacher_middle_name: true,
-        teacher_last_name: true,
+/**
+ * Broadcasts for which the receiver got a notification between startAt and endAt (inclusive).
+ * Ordered by most recently received first. Includes receivedAt from the matching notification.
+ */
+export async function getBroadcastsByReceiverIdInDateRange(
+  receiverId,
+  campusId,
+  startAt,
+  endAt
+) {
+  const notifications = await prisma.notification.findMany({
+    where: {
+      receiverId,
+      sourceType: "BROADCAST",
+      createdAt: { gte: startAt, lte: endAt },
+    },
+    select: { sourceId: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const orderedIds = [];
+  const receivedAtById = new Map();
+  for (const n of notifications) {
+    if (!receivedAtById.has(n.sourceId)) {
+      receivedAtById.set(n.sourceId, n.createdAt);
+      orderedIds.push(n.sourceId);
+    }
+  }
+
+  if (orderedIds.length === 0) {
+    return [];
+  }
+
+  const broadcasts = await prisma.broadcastNotification.findMany({
+    where: {
+      id: { in: orderedIds },
+      ...(campusId ? { campusId } : {}),
+    },
+    include: {
+      broadcastAttachments: {
+        select: {
+          id: true,
+          fileUrl: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+        },
       },
-    }),
-  ]);
-
-  // Create a lookup map for sender names
-  const senderMap = new Map();
-  
-  users.forEach((user) => {
-    senderMap.set(user.userid, user.username);
-  });
-  
-  teachers.forEach((teacher) => {
-    const fullName = [
-      teacher.teacher_first_name,
-      teacher.teacher_middle_name,
-      teacher.teacher_last_name,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    senderMap.set(teacher.teacher_id, fullName);
+    },
   });
 
-  // Enrich broadcasts with sender info and attachment details
-  return broadcasts.map((broadcast) => ({
-    id: broadcast.id,
-    title: broadcast.title,
-    message: broadcast.message,
-    createdBy: broadcast.createdBy,
-    senderName: senderMap.get(broadcast.createdBy) || "Unknown",
-    campusId: broadcast.campusId,
-    status: broadcast.status,
-    hasAttachments: broadcast.broadcastAttachments.length > 0,
-    attachmentCount: broadcast.broadcastAttachments.length,
-    attachments: broadcast.broadcastAttachments,
-    createdAt: broadcast.createdAt,
-    submittedAt: broadcast.submittedAt,
+  const byId = new Map(broadcasts.map((b) => [b.id, b]));
+  const ordered = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+  const enriched = await enrichBroadcastsForReceiver(ordered);
+  return enriched.map((row) => ({
+    ...row,
+    receivedAt: receivedAtById.get(row.id) ?? row.createdAt,
   }));
 }
 

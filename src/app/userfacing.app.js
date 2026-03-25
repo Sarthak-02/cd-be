@@ -12,6 +12,7 @@ import examGradeRoutes from '../routes/app/examGrade.route.js'
 import deviceTokenRoutes from '../routes/app/deviceToken.route.js'
 import notificationRoutes from '../routes/app/notification.route.js'
 import scholarshipRoutes from '../routes/app/scholarship.route.js'
+import { receiverSummaryRouter } from '../routes/app/receiverSummary.route.js'
 
 
 dotenv.config()
@@ -33,6 +34,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(deviceTokenRoutes, { prefix: '/device-token' })
       await appRoutes.register(notificationRoutes)
       await appRoutes.register(scholarshipRoutes)
+      await appRoutes.register(receiverSummaryRouter)
      
     }, { prefix: '/userfacing' })
   
