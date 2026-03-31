@@ -24,98 +24,202 @@ enum TeacherStatus {
   inactive
 }
 
-model User {
-  userid            String   @id
-  username          String
-  password          String
-  isadmin           Boolean  @default(false)
-
-  site_permissions  Json?
-  page_permissions  Json?
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+enum AttendanceSessionStatus {
+  DRAFT
+  NOTIFYING
+  SUBMITTED
+  LOCKED
 }
 
-model School {
-  school_id      String   @id
-  school_name    String
-  school_type    String
-  motto          String?
-  school_website String?
-  school_logo    String?
-  extras         Json?
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum CampusSession {
+  MORNING
+  EVENING
+  FULL_DAY
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  APP
+}
+
+enum NotificationStatus {
+  PENDING // created, not processed yet
+  QUEUED // pushed to queue successfully
+  RETRYING //Retrying 
+  SENT // delivered successfully
+  FAILED // permanently failed after retries
+}
+
+enum BroadcastStatus {
+  DRAFT
+  NOTIFYING
+  SUBMITTED
+}
+
+enum TargetType {
+  CAMPUS
+  CLASS
+  SECTION
+  STUDENT
+  TEACHER
+}
+
+enum NotificationSourceType {
+  ATTENDANCE
+  BROADCAST
+  HOMEWORK
+  EXAM
+  SYSTEM
+}
+
+enum NotificationRecipientType {
+  STUDENT
+  PARENT
+  TEACHER
+  ALL
+}
+
+enum HomeworkStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  LATE
+  GRADED
+}
+
+enum EndUserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+  PARENT
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  MICROSOFT
+}
+
+model User {
+  userid   String  @id
+  username String
+  password String
+  isadmin  Boolean @default(false)
+
+  site_permissions Json?
+  page_permissions Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EndUser {
+  id             String   @id @default(uuid())
+  userid         String   @unique
+  username       String   @unique
+  passwordHash   String?  // bcrypt / argon2
+  authProvider   AuthProvider @default(LOCAL)
+
+  role           EndUserRole // STUDENT | TEACHER | ADMIN | PARENT
+  isActive       Boolean  @default(true)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
 
-  campuses       Campus[]
+
+model School {
+  school_id      String  @id
+  school_name    String
+  extras         Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campuses Campus[]
 }
 
 model Campus {
-  campus_id    String   @id
-  campus_name  String
-  campus_type  String
+  campus_id   String @id
+  campus_name String
+  campus_type String
 
-  school_id    String
-  school       School   @relation(fields: [school_id], references: [school_id], onDelete: Cascade)
+  school_id String
+  school    School @relation(fields: [school_id], references: [school_id], onDelete: Cascade)
 
-  extras       Json?
+  extras Json?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  classes      Class[]
-  students     Student[]
-  teachers     Teacher[]
+  classes  Class[]
+  students Student[]
+  teachers Teacher[]
 
   @@index([school_id])
 }
 
 model Class {
-  class_id           String   @id @default(uuid())
+  class_id String @id @default(uuid())
 
   class_name         String
   class_short_name   String?
   class_description  String?
   class_room_no      String?
   class_teacher_id   String?
-  class_has_sections Boolean  @default(false)
+  class_has_sections Boolean @default(false)
   class_type         String?
   class_stream       String?
   class_shift        String?
   extras             Json?
 
-  campus_id          String
-  campus             Campus   @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+  campus_id String
+  campus    Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sections           Section[]
+  sections Section[]
 
   @@index([campus_id])
 }
 
 model Section {
-  section_id         String   @id @default(uuid())
+  section_id         String  @id @default(uuid())
   section_name       String
   section_short_name String?
   section_teacher_id String?
   section_room_no    String?
   extras             Json?
 
-  class_id           String
-  classRef           Class    @relation(fields: [class_id], references: [class_id], onDelete: Cascade)
+  class_id String
+  classRef Class  @relation(fields: [class_id], references: [class_id], onDelete: Cascade)
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendanceSessions AttendanceSession[]
+  students           Student[]
 
   @@index([class_id])
 }
 
 model Student {
-  student_id             String        @id @default(uuid())
+  student_id String @id @default(uuid())
 
   student_admission_no   String
   student_roll_no        String?
@@ -126,39 +230,440 @@ model Student {
   student_gender         Gender
   student_dob            DateTime
   student_current_status StudentStatus
-  extras                 Json?
 
-  campus_id              String
-  campus                 Campus        @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+  student_section_id String
+  section    Section @relation(fields: [student_section_id], references: [section_id], onDelete: Cascade)
 
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  extras Json?
 
+  campus_id String
+  campus    Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendanceRecords   AttendanceRecord[]
+  parents             Parent[]
+  homeworkSubmissions HomeworkSubmission[]
+  examGrades          ExamGrade[]
+  
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
 }
 
+model Parent {
+  parent_id String @id @default(uuid())
+
+  name          String
+  phone         String?
+  email         String?
+  relation_type String? // Father , Mother , Guardian etc
+
+  student_id String
+  student    Student @relation(fields: [student_id], references: [student_id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([student_id, phone])
+  @@index([phone])
+}
+
 model Teacher {
-  teacher_id             String        @id @default(uuid())
-  teacher_employee_code  String
-  teacher_first_name     String
-  teacher_middle_name    String?
-  teacher_last_name      String
-  teacher_gender         Gender
-  teacher_dob            DateTime
-  teacher_photo_url      String?
-  teacher_email          String        @unique
-  teacher_phone          String?       @unique
-  teacher_status         TeacherStatus
-  extras                 Json?
+  teacher_id            String        @id @default(uuid())
+  teacher_employee_code String
+  teacher_first_name    String
+  teacher_middle_name   String?
+  teacher_last_name     String
+  teacher_gender        Gender
+  teacher_dob           DateTime
+  teacher_photo_url     String?
+  teacher_email         String        @unique
+  teacher_phone         String?       @unique
+  teacher_status        TeacherStatus
+  extras                Json?
 
-  campus_id              String
-  campus                 Campus        @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+  campus_id String
+  campus    Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
 
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendanceSessions AttendanceSession[]
+  updatedAttendance  AttendanceRecord[]  @relation("AttendanceUpdatedBy")
+  homework           Homework[]
+  gradedSubmissions  HomeworkSubmission[] @relation("HomeworkGradedBy")
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
+}
+
+model AttendanceSession {
+  id String @id @default(uuid())
+
+  sectionId String
+  teacherId String
+
+  date          DateTime      @db.Date
+  campusSession CampusSession @default(FULL_DAY)
+  period        String        @default("OVERALL")
+
+  status AttendanceSessionStatus @default(DRAFT)
+
+  createdAt   DateTime  @default(now())
+  submittedAt DateTime?
+  lockedAt    DateTime?
+
+  section Section @relation(fields: [sectionId], references: [section_id])
+  teacher Teacher @relation(fields: [teacherId], references: [teacher_id])
+
+  records AttendanceRecord[]
+
+  @@unique([sectionId, date, campusSession, period])
+  @@index([sectionId, date])
+  @@index([date])
+}
+
+model AttendanceRecord {
+  id String @id @default(uuid())
+
+  attendanceSessionId String
+  studentId           String
+
+  status AttendanceStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  attendanceSession AttendanceSession @relation(fields: [attendanceSessionId], references: [id], onDelete: Cascade)
+  student           Student           @relation(fields: [studentId], references: [student_id])
+  updatedByTeacher  Teacher?          @relation("AttendanceUpdatedBy", fields: [updatedBy], references: [teacher_id])
+
+  @@unique([attendanceSessionId, studentId])
+  @@index([attendanceSessionId])
+  @@index([studentId])
+}
+
+model Notification {
+  id        String @id @default(uuid())
+  dedupeKey String @unique
+
+  // recipient (polymorphic - kept as scalar fields)
+  recipientType NotificationRecipientType
+  receiverId    String?
+  parentId      String?
+  senderId      String?
+
+  channel NotificationChannel
+  payload Json
+
+  // source (polymorphic - kept as scalar fields)
+  sourceType NotificationSourceType
+  sourceId   String // attendanceSessionId, broadcastId, etc.
+
+  status     NotificationStatus @default(PENDING)
+  retryCount Int                @default(0)
+  lastError  String?
+  queuedAt   DateTime?
+  sentAt     DateTime?
+  read       Boolean            @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, channel])
+  @@index([sourceType, sourceId])
+}
+
+model BroadcastNotification {
+  id        String          @id @default(uuid())
+  title     String
+  message   String
+  createdBy String // teacher/admin
+  campusId  String
+  status    BroadcastStatus // DRAFT | NOTIFYING | SUBMITTED
+
+  broadcastAttachments BroadcastAttachment[]
+  broadcastTargets     BroadcastTarget[]
+
+  createdAt   DateTime  @default(now())
+  submittedAt DateTime?
+}
+
+model BroadcastAttachment {
+  id                      String @id @default(uuid())
+  broadcastNotificationId String
+  fileUrl                 String
+  fileName                String
+  fileType                String
+  fileSize                Int
+
+  broadcastNotification BroadcastNotification @relation(fields: [broadcastNotificationId], references: [id], onDelete: Cascade)
+
+  @@index([broadcastNotificationId])
+}
+
+model BroadcastTarget {
+  id                      String     @id @default(uuid())
+  broadcastNotificationId String
+  targetType              TargetType // CAMPUS | CLASS | SECTION | STUDENT | TEACHER
+  targetId                Json?
+
+  broadcastNotification BroadcastNotification @relation(fields: [broadcastNotificationId], references: [id], onDelete: Cascade)
+
+  @@index([broadcastNotificationId])
+}
+
+model UserNotification {
+  id              String    @id @default(uuid())
+  notification_id String
+  receiver_id     String
+  read_at         DateTime?
+
+  @@unique([notification_id, receiver_id]) // dedupe + idempotency
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String   // Can be student_id, teacher_id, or parent_id
+  userType  EndUserRole // STUDENT | TEACHER | PARENT
+  token     String   @unique // FCM device token
+  platform  String?  // ios, android, web
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastUsedAt DateTime @default(now())
+  
+  @@unique([userId, token])
+  @@index([userId])
+  @@index([userType])
+}
+
+model Subject {
+  subject_id   String  @id @default(uuid())
+  subject_name String
+  subject_code String?
+  description  String?
+  campus_id    String
+  
+  extras Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campus_id, subject_code])
+  @@index([campus_id])
+}
+
+model Homework {
+  id          String         @id @default(uuid())
+  title       String
+  description String
+  dueDate     DateTime
+  subject     String
+  createdBy   String // Teacher's ID
+  status      HomeworkStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  teacher     Teacher              @relation(fields: [createdBy], references: [teacher_id])
+  attachments HomeworkAttachment[]
+  targets     HomeworkTarget[]
+
+  @@index([createdBy])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model HomeworkAttachment {
+  id         String @id @default(uuid())
+  homeworkId String
+  fileUrl    String
+  fileName   String
+  fileType   String
+  fileSize   Int
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([homeworkId])
+}
+
+model HomeworkTarget {
+  id         String     @id @default(uuid())
+  homeworkId String
+  targetType TargetType // CLASS | SECTION | STUDENT
+  targetId   String // class_id, section_id, or student_id
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+
+  @@index([homeworkId])
+  @@index([targetType, targetId])
+}
+
+model HomeworkSubmission {
+  id         String           @id @default(uuid())
+  homeworkId String
+  studentId  String
+  status     SubmissionStatus @default(PENDING)
+  
+  submittedAt DateTime?
+  grade       String?
+  feedback    String?
+  gradedBy    String?
+  gradedAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  student       Student  @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+  gradedByTeacher Teacher? @relation("HomeworkGradedBy", fields: [gradedBy], references: [teacher_id])
+  
+  @@unique([homeworkId, studentId])
+  @@index([homeworkId])
+  @@index([studentId])
+  @@index([status])
+}
+
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+enum ExamTargetType {
+  STUDENT
+  SECTION
+  SCHOOL
+  CLASS
+}
+
+model Exam {
+  id       String         @id @default(uuid())
+  examType String // configurable exam type (e.g., "Mid-Term", "Final", "Unit Test")
+  target   ExamTargetType // STUDENT | SECTION | SCHOOL
+  status   ExamStatus     @default(DRAFT) // DRAFT | PUBLISHED | COMPLETED
+  
+  // Grading details (for the whole exam)
+  gradingType String? // e.g., "Percentage", "Grade Points", "Pass/Fail"
+  gradingExtras Json? // Additional grading configuration
+  
+  createdBy String // Teacher/Admin ID
+  campusId  String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  subjects ExamSubject[]
+  targets  ExamTarget[]
+  grades   ExamGrade[]
+  
+  @@index([campusId])
+  @@index([examType])
+  @@index([target])
+  @@index([status])
+}
+
+model ExamSubject {
+  id            String   @id @default(uuid())
+  examId        String
+  subjectName   String
+  examDate      DateTime @db.Date
+  examStartTime String 
+  examEndTime   String 
+  
+  extras Json? // Additional subject-specific details
+  
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  grades ExamGrade[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([examId])
+  @@index([examDate])
+}
+
+model ExamTarget {
+  id         String         @id @default(uuid())
+  examId     String
+  targetType ExamTargetType // STUDENT | SECTION | SCHOOL
+  targetId   String? // student_id, section_id, school_id (null for SCHOOL-level exams)
+  
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  @@index([examId])
+  @@index([targetType, targetId])
+}
+
+model ExamGrade {
+  id              String   @id @default(uuid())
+  examId          String
+  examSubjectId   String
+  studentId       String
+  
+  // Grading details
+  gradesObtained  String?   // Actual marks scored
+  remarks         String?  // Teacher's comments/feedback
+  
+  // Grading metadata
+  gradedBy        String?  // Teacher ID who graded
+  gradedAt        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  exam           Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examSubject    ExamSubject  @relation(fields: [examSubjectId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+  
+  @@unique([examSubjectId, studentId]) // One grade per student per exam subject
+  @@index([examId])
+  @@index([examSubjectId])
+  @@index([studentId])
+}
+
+enum ScholarshipStatus {
+  OPEN
+  CLOSED
+  EXTENDED
+  UPCOMING
+}
+
+model Scholarship {
+  id                 String            @id @default(uuid())
+  sourceName         String
+  sourceType         String
+  scholarshipName    String
+  category           String
+  classes            Json
+  targetGroup        Json
+  academicYear       String
+  status             ScholarshipStatus
+  openDate           DateTime?         @db.Date
+  closeDate          DateTime?         @db.Date
+  benefitSummary     String?           @db.Text
+  eligibilitySummary String?           @db.Text
+  detailsUrl         String?
+  announcementUrl    String?
+  lastCheckedAt      DateTime?
+  contentHash        String            @unique
+  rawTitle           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([academicYear])
+  @@index([status])
+  @@index([category])
+  @@index([sourceType])
 }

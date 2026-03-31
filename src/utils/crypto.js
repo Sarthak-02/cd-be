@@ -30,3 +30,10 @@ export function decrypt({ encrypted, iv, tag }) {
 
   return decrypted.toString("utf8");
 }
+
+export function makeDedupeKey({ sessionId, parentId="parent", channel="APP", receiverId }) {
+  return crypto
+    .createHash("sha256")
+    .update(`${sessionId}|${parentId}|${channel}|${receiverId}`)
+    .digest("hex");
+}
