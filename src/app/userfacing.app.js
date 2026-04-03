@@ -14,6 +14,7 @@ import notificationRoutes from '../routes/app/notification.route.js'
 import scholarshipRoutes from '../routes/app/scholarship.route.js'
 import { receiverSummaryRouter } from '../routes/app/receiverSummary.route.js'
 import chatRoutes from '../routes/app/chat.route.js'
+import lessonPlanRoutes from '../routes/app/lessonPlan.route.js'
 
 
 dotenv.config()
@@ -37,6 +38,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(scholarshipRoutes)
       await appRoutes.register(receiverSummaryRouter)
       await appRoutes.register(chatRoutes)
+      await appRoutes.register(lessonPlanRoutes)
      
     }, { prefix: '/userfacing' })
   

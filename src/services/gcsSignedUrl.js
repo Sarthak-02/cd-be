@@ -37,6 +37,10 @@ const DOCUMENT_EXTENSION_MAP = {
   "image/tiff": "tiff",
   "image/bmp": "bmp",
   "image/ico": "ico",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+  "video/x-msvideo": "avi",
 };
 
 export async function generateImageUploadSignedUrl({
