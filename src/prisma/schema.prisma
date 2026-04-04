@@ -466,7 +466,6 @@ model Subject {
 
   @@unique([campus_id, subject_code])
   @@index([campus_id])
-  lessonPlans LessonPlan[]
 }
 
 model Homework {
@@ -707,6 +706,7 @@ model LessonPlan {
 
   lessonDate          DateTime         @db.Date
   chapterTopic        String
+  description         String?          @db.Text
   /// JSON array of strings, e.g. ["Understand X", "Apply Y"]
   learningObjectives  Json
   /// JSON array of { type, description?, duration_minutes? }
@@ -714,8 +714,7 @@ model LessonPlan {
   homework            String?          @db.Text
   status              LessonPlanStatus @default(PLANNED)
 
-  subjectId String
-  subject   Subject @relation(fields: [subjectId], references: [subject_id])
+  subject String
 
   classId String
   classRef Class @relation(fields: [classId], references: [class_id])
@@ -737,7 +736,7 @@ model LessonPlan {
   @@index([teacherId, lessonDate])
   @@index([campusId, lessonDate])
   @@index([classId, sectionId])
-  @@index([subjectId])
+  @@index([subject])
   @@index([status])
 }
 

@@ -2,13 +2,6 @@ import { prisma } from "../prisma/prisma.js";
 
 const lessonPlanInclude = {
   attachments: true,
-  subject: {
-    select: {
-      subject_id: true,
-      subject_name: true,
-      subject_code: true,
-    },
-  },
   classRef: {
     select: {
       class_id: true,
@@ -43,26 +36,12 @@ function mapLessonPlanRow(row) {
   };
 }
 
-export async function validateLessonPlanScope({
-  teacherId,
-  subjectId,
-  classId,
-  sectionId,
-}) {
+export async function validateLessonPlanScope({ teacherId, classId, sectionId }) {
   const teacher = await prisma.teacher.findUnique({
     where: { teacher_id: teacherId },
     select: { campus_id: true },
   });
   if (!teacher) return { ok: false, message: "Teacher not found" };
-
-  const subject = await prisma.subject.findUnique({
-    where: { subject_id: subjectId },
-    select: { campus_id: true },
-  });
-  if (!subject) return { ok: false, message: "Subject not found" };
-  if (subject.campus_id !== teacher.campus_id) {
-    return { ok: false, message: "Subject is not in the teacher's campus" };
-  }
 
   const classRow = await prisma.class.findUnique({
     where: { class_id: classId },
@@ -90,11 +69,12 @@ export async function validateLessonPlanScope({
 export async function createLessonPlan({
   lessonDate,
   chapterTopic,
+  description,
   learningObjectives,
   activities,
   homework,
   status = "PLANNED",
-  subjectId,
+  subject,
   classId,
   sectionId,
   teacherId,
@@ -105,11 +85,12 @@ export async function createLessonPlan({
     data: {
       lessonDate: new Date(lessonDate),
       chapterTopic,
+      description: description?.trim() ? description.trim() : null,
       learningObjectives,
       activities,
       homework: homework ?? null,
       status,
-      subjectId,
+      subject: typeof subject === "string" ? subject.trim() : subject,
       classId,
       sectionId: sectionId ?? null,
       teacherId,
@@ -136,7 +117,7 @@ export async function getLessonPlanById(lessonPlanId) {
 export async function listLessonPlans({
   teacherId,
   campusId,
-  subjectId,
+  subject,
   classId,
   sectionId,
   status,
@@ -149,7 +130,9 @@ export async function listLessonPlans({
 
   if (teacherId) where.teacherId = teacherId;
   if (campusId) where.campusId = campusId;
-  if (subjectId) where.subjectId = subjectId;
+  if (subject !== undefined && subject !== null && subject !== "") {
+    where.subject = subject;
+  }
   if (classId) where.classId = classId;
   if (sectionId !== undefined && sectionId !== null && sectionId !== "") {
     where.sectionId = sectionId;
@@ -178,13 +161,24 @@ export async function updateLessonPlan(lessonPlanId, patch) {
 
   if (patch.lessonDate !== undefined) data.lessonDate = new Date(patch.lessonDate);
   if (patch.chapterTopic !== undefined) data.chapterTopic = patch.chapterTopic;
+  if (patch.description !== undefined) {
+    data.description =
+      patch.description === null || patch.description === ""
+        ? null
+        : String(patch.description).trim() || null;
+  }
   if (patch.learningObjectives !== undefined) {
     data.learningObjectives = patch.learningObjectives;
   }
   if (patch.activities !== undefined) data.activities = patch.activities;
   if (patch.homework !== undefined) data.homework = patch.homework;
   if (patch.status !== undefined) data.status = patch.status;
-  if (patch.subjectId !== undefined) data.subjectId = patch.subjectId;
+  if (patch.subject !== undefined) {
+    data.subject =
+      patch.subject === null || patch.subject === ""
+        ? ""
+        : String(patch.subject).trim();
+  }
   if (patch.classId !== undefined) data.classId = patch.classId;
   if (patch.sectionId !== undefined) {
     data.sectionId = patch.sectionId === null ? null : patch.sectionId;

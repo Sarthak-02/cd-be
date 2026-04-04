@@ -15,11 +15,12 @@ function toDbPayload(body) {
   return {
     lessonDate: body.lesson_date,
     chapterTopic: body.chapter_topic,
+    description: body.description,
     learningObjectives: body.learning_objectives,
     activities: body.activities,
     homework: body.homework,
     status: body.status ?? "PLANNED",
-    subjectId: body.subject_id,
+    subject: body.subject,
     classId: body.class_id,
     sectionId: body.section_id,
     teacherId: body.teacher_id,
@@ -35,7 +36,7 @@ export async function create_lesson_plan(req, reply) {
       chapter_topic,
       learning_objectives,
       activities,
-      subject_id,
+      subject,
       class_id,
       teacher_id,
     } = body;
@@ -43,19 +44,19 @@ export async function create_lesson_plan(req, reply) {
     if (
       !lesson_date ||
       !chapter_topic ||
+      !subject?.trim() ||
       !learning_objectives?.length ||
       activities === undefined
     ) {
       return reply.code(400).send({
         success: false,
         message:
-          "lesson_date, chapter_topic, non-empty learning_objectives, and activities are required",
+          "lesson_date, chapter_topic, subject, non-empty learning_objectives, and activities are required",
       });
     }
 
     const scope = await validateLessonPlanScope({
       teacherId: teacher_id,
-      subjectId: subject_id,
       classId: class_id,
       sectionId: body.section_id ?? null,
     });
@@ -119,7 +120,7 @@ export async function list_lesson_plans(req, reply) {
     const {
       teacher_id,
       campus_id,
-      subject_id,
+      subject,
       class_id,
       section_id,
       status,
@@ -139,7 +140,7 @@ export async function list_lesson_plans(req, reply) {
     const plans = await listLessonPlans({
       teacherId: teacher_id,
       campusId: campus_id,
-      subjectId: subject_id,
+      subject,
       classId: class_id,
       sectionId: section_id,
       status,
@@ -176,14 +177,12 @@ export async function update_lesson_plan(req, reply) {
       });
     }
 
-    const nextSubject = body.subject_id ?? existing.subject.subject_id;
     const nextClass = body.class_id ?? existing.class.class_id;
     const nextSection =
       body.section_id !== undefined ? body.section_id : existing.section?.section_id ?? null;
 
     const scope = await validateLessonPlanScope({
       teacherId: existing.teacher.teacher_id,
-      subjectId: nextSubject,
       classId: nextClass,
       sectionId: nextSection,
     });
@@ -195,13 +194,14 @@ export async function update_lesson_plan(req, reply) {
     const patch = {};
     if (body.lesson_date !== undefined) patch.lessonDate = body.lesson_date;
     if (body.chapter_topic !== undefined) patch.chapterTopic = body.chapter_topic;
+    if (body.description !== undefined) patch.description = body.description;
     if (body.learning_objectives !== undefined) {
       patch.learningObjectives = body.learning_objectives;
     }
     if (body.activities !== undefined) patch.activities = body.activities;
     if (body.homework !== undefined) patch.homework = body.homework;
     if (body.status !== undefined) patch.status = body.status;
-    if (body.subject_id !== undefined) patch.subjectId = body.subject_id;
+    if (body.subject !== undefined) patch.subject = body.subject;
     if (body.class_id !== undefined) patch.classId = body.class_id;
     if (body.section_id !== undefined) patch.sectionId = body.section_id;
 
