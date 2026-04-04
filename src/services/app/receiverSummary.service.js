@@ -1,5 +1,8 @@
 import { prisma } from "../../prisma/prisma.js";
 import { getHomeworkForStudent } from "../../db/homework.db.js";
+import { getExamsForStudent } from "../../db/exam.db.js";
+import { listLessonPlansForStudentSectionSummary } from "../../db/lessonPlan.db.js";
+import { getMessagingSummaryForUserIds } from "../../db/chat.db.js";
 import { getBroadcastsByReceiverIdInDateRange } from "./broadcast.service.js";
 
 function formatYmdIST(d) {
@@ -87,7 +90,25 @@ export async function getReceiverSummary({ receiverId, sectionId, campusId }) {
   const broadcastFrom = istStartOfDay(yesterdayYmd);
   const broadcastTo = istEndOfDay(todayYmd);
 
-  const [homeworkDueSoon, recentBroadcasts, attendanceToday] = await Promise.all([
+  const lessonPlanFromYmd = addDaysYmdIST(todayYmd, -7);
+  const lessonPlanToYmd = addDaysYmdIST(todayYmd, 30);
+  const lessonPlanFrom = istStartOfDay(lessonPlanFromYmd);
+  const lessonPlanTo = istEndOfDay(lessonPlanToYmd);
+
+  const examEndYmd = addDaysYmdIST(todayYmd, 60);
+  const examStart = istStartOfDay(todayYmd);
+  const examEnd = istEndOfDay(examEndYmd);
+
+  const classId = section.classRef?.class_id;
+
+  const [
+    homeworkDueSoon,
+    recentBroadcasts,
+    attendanceToday,
+    lessonPlansWindow,
+    upcomingExams,
+    parentRows,
+  ] = await Promise.all([
     getHomeworkForStudent({
       studentId: receiverId,
       status: "PUBLISHED",
@@ -126,7 +147,50 @@ export async function getReceiverSummary({ receiverId, sectionId, campusId }) {
         { attendanceSession: { period: "asc" } },
       ],
     }),
+    classId
+      ? listLessonPlansForStudentSectionSummary({
+          campusId,
+          classId,
+          sectionId,
+          lessonDateFrom: lessonPlanFrom,
+          lessonDateTo: lessonPlanTo,
+          limit: 5,
+        })
+      : Promise.resolve([]),
+    getExamsForStudent({
+      studentId: receiverId,
+      status: "PUBLISHED",
+      startDate: examStart,
+      endDate: examEnd,
+      limit: 5,
+      offset: 0,
+    }),
+    prisma.parent.findMany({
+      where: { student_id: receiverId },
+      select: { parent_id: true },
+    }),
   ]);
+
+  const chatUserCandidates = [receiverId, ...parentRows.map((p) => p.parent_id)];
+  const chatEndUsers = await prisma.endUser.findMany({
+    where: { userid: { in: chatUserCandidates }, isActive: true },
+    select: { userid: true },
+  });
+  const messagingSummary = await getMessagingSummaryForUserIds(chatEndUsers.map((u) => u.userid));
+
+  const examsSummary = upcomingExams.map((exam) => ({
+    id: exam.id,
+    examType: exam.examType,
+    status: exam.status,
+    campusId: exam.campusId,
+    subjects: (exam.subjects || []).map((s) => ({
+      id: s.id,
+      subjectName: s.subjectName,
+      examDate: s.examDate,
+      examStartTime: s.examStartTime,
+      examEndTime: s.examEndTime,
+    })),
+  }));
 
   const timetable = section.extras?.timetable ?? null;
 
@@ -170,6 +234,28 @@ export async function getReceiverSummary({ receiverId, sectionId, campusId }) {
       broadcastsReceivedYesterdayAndToday: recentBroadcasts,
       timetable,
       attendanceToday: attendanceTodayPayload,
+      messages: {
+        totalUnread: messagingSummary.totalUnreadMessages,
+        byLinkedUser: messagingSummary.profiles,
+      },
+      lessonPlanning: {
+        window: { from: lessonPlanFromYmd, to: lessonPlanToYmd },
+        items: lessonPlansWindow,
+        count: lessonPlansWindow.length,
+      },
+      homework: {
+        dueNextSevenDays: homeworkDueSoon,
+        count: homeworkDueSoon.length,
+      },
+      announcements: {
+        recent: recentBroadcasts,
+        count: recentBroadcasts.length,
+      },
+      exams: {
+        window: { from: todayYmd, to: examEndYmd },
+        items: examsSummary,
+        count: examsSummary.length,
+      },
     },
   };
 }

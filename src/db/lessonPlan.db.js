@@ -156,6 +156,66 @@ export async function listLessonPlans({
   return rows.map(mapLessonPlanRow);
 }
 
+/**
+ * Lesson plans visible to a student: same class, section-wide or matching section.
+ */
+export async function listLessonPlansForStudentSectionSummary({
+  campusId,
+  classId,
+  sectionId,
+  lessonDateFrom,
+  lessonDateTo,
+  limit = 5,
+}) {
+  const rows = await prisma.lessonPlan.findMany({
+    where: {
+      campusId,
+      classId,
+      OR: [{ sectionId: null }, { sectionId }],
+      lessonDate: {
+        gte: lessonDateFrom,
+        lte: lessonDateTo,
+      },
+    },
+    orderBy: { lessonDate: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      lessonDate: true,
+      chapterTopic: true,
+      subject: true,
+      status: true,
+      sectionId: true,
+      teacher: {
+        select: {
+          teacher_id: true,
+          teacher_first_name: true,
+          teacher_middle_name: true,
+          teacher_last_name: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((row) => {
+    const t = row.teacher;
+    const teacherName = t
+      ? [t.teacher_first_name, t.teacher_middle_name, t.teacher_last_name].filter(Boolean).join(" ") ||
+        t.teacher_id
+      : null;
+    const { teacher, ...rest } = row;
+    return {
+      ...rest,
+      teacher: t
+        ? {
+            teacher_id: t.teacher_id,
+            teacher_name: teacherName,
+          }
+        : null,
+    };
+  });
+}
+
 export async function updateLessonPlan(lessonPlanId, patch) {
   const data = {};
 

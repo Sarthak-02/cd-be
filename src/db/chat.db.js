@@ -325,3 +325,35 @@ export async function markConversationRead(conversationId, userId, readAt = new 
     data: { lastReadAt: readAt },
   });
 }
+
+/**
+ * Unread counts per linked account (e.g. student + parents). Each userId is an EndUser.userid.
+ */
+export async function getMessagingSummaryForUserIds(userIds) {
+  const unique = [...new Set((userIds || []).filter(Boolean))];
+  if (!unique.length) {
+    return { totalUnreadMessages: 0, profiles: [] };
+  }
+
+  const profiles = await Promise.all(
+    unique.map(async (userId) => {
+      const rows = await listConversationsForUser(userId);
+      let unreadMessages = 0;
+      for (const { conversation, participant } of rows) {
+        unreadMessages += await countUnreadMessages(
+          conversation.id,
+          userId,
+          participant.lastReadAt
+        );
+      }
+      return {
+        userId,
+        unreadMessages,
+        conversationCount: rows.length,
+      };
+    })
+  );
+
+  const totalUnreadMessages = profiles.reduce((sum, p) => sum + p.unreadMessages, 0);
+  return { totalUnreadMessages, profiles };
+}

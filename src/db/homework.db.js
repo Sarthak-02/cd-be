@@ -230,6 +230,40 @@ export async function getHomeworkByTeacher({
 }
 
 /**
+ * Published homework for a teacher that is still due (dueDate >= dueFrom), most recently created first.
+ */
+export async function getUpcomingDueHomeworkByTeacher({ teacherId, dueFrom, limit = 5 }) {
+    try {
+        const homework = await prisma.homework.findMany({
+            where: {
+                createdBy: teacherId,
+                status: "PUBLISHED",
+                dueDate: { gte: new Date(dueFrom) },
+            },
+            include: {
+                attachments: true,
+                targets: true,
+                teacher: {
+                    select: {
+                        teacher_id: true,
+                        teacher_first_name: true,
+                        teacher_middle_name: true,
+                        teacher_last_name: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
+
+        return await Promise.all(homework.map((hw) => formatHomeworkResponse(hw)));
+    } catch (err) {
+        console.error("Error fetching upcoming due homework by teacher:", err);
+        return [];
+    }
+}
+
+/**
  * Get homework for a specific target (class, section, or student)
  */
 export async function getHomeworkByTarget({
