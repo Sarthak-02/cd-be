@@ -72,10 +72,6 @@ export async function get_attendance_details(req, reply) {
         if ((!attendanceDetails || attendanceDetails.length === 0) && isToday) {
             const students = await getActiveStudentsBySection(section_id);
 
-            if (students === null) {
-                throw new Error("Failed to fetch students");
-            }
-
             // Format the response similar to students_by_section_get
             const formattedStudents = students.map(student => ({
                 student_id: student.student_id,

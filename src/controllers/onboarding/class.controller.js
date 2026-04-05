@@ -1,61 +1,67 @@
-
 import {
   createClass,
   getClass,
   getAllClasses,
   updateClass,
-  deleteClass
+  deleteClass,
 } from "../../db/class.db.js";
-import { createSection } from "../../db/section.db.js";
+
+function sendPrismaError(reply, err, req) {
+  req.log?.error(err);
+  if (err.code === "P2002") {
+    return reply.code(409).send({
+      success: false,
+      message: "Class already exists or conflicts with an existing record",
+    });
+  }
+  if (err.code === "P2003") {
+    return reply.code(400).send({
+      success: false,
+      message: "Invalid reference (e.g. campus not found)",
+    });
+  }
+  if (err.code === "P2025") {
+    return reply.code(404).send({
+      success: false,
+      message: "Class not found",
+    });
+  }
+  return reply.code(500).send({
+    success: false,
+    message: "Internal server error",
+    ...(process.env.NODE_ENV === "development" && { details: err.message }),
+  });
+}
 
 export async function class_post(req, reply) {
   try {
-    const data = req.body;
-    const result = await createClass(data);
-
-    if (!result) throw new Error();
-
-    // const extras = data?.extras || {}
-    // const has_sections = extras?.class_has_sections ?? false
-
-    // if (!has_sections) {
-    //   // create a default section
-    //   const section_payload = {
-    //     section_name: data?.class_name,
-    //     section_short_name: data?.class_short_name,
-    //     section_teacher_id: data?.class_teacher_id,
-    //     section_room_no: data?.class_room_no,
-    //     class_id: result.class_id,
-    //     extras: {
-    //       section_max_students: extras?.class_max_students
-    //     }
-    //   }
-
-    //   const section_created = await createSection(section_payload)
-
-    //   if (!section_created) {
-    //     throw new Error()
-    //   }
-    // }
-
-    reply.send({ success: true, message: "Class Created Successfully" });
+    const cls = await createClass(req.body);
+    return reply.code(201).send({
+      success: true,
+      message: "Class created successfully",
+      data: cls,
+    });
   } catch (err) {
-    console.log(err);
-    reply.code(400).send({ success: false, message: "Unable to create Class" });
+    return sendPrismaError(reply, err, req);
   }
 }
 
 export async function class_put(req, reply) {
   try {
-    const data = req.body;
-    const result = await updateClass(data);
-
-    if (!result) throw new Error();
-
-    reply.send({ success: true, message: "Class Updated Successfully", data: result });
+    const cls = await updateClass(req.body);
+    return reply.send({
+      success: true,
+      message: "Class updated successfully",
+      data: cls,
+    });
   } catch (err) {
-    console.log(err);
-    reply.code(400).send({ success: false, message: "Unable to update Class" });
+    if (err.code === "NO_FIELDS_TO_UPDATE") {
+      return reply.code(400).send({
+        success: false,
+        message: "Provide at least one field to update besides class_id",
+      });
+    }
+    return sendPrismaError(reply, err, req);
   }
 }
 
@@ -63,43 +69,56 @@ export async function class_get(req, reply) {
   try {
     const { class_id } = req.query;
     const cls = await getClass(class_id);
-
-    reply.send({ success: true, message: "Fetched Class details", data: cls });
+    if (!cls) {
+      return reply.code(404).send({
+        success: false,
+        message: "Class not found",
+        data: null,
+      });
+    }
+    return reply.send({
+      success: true,
+      message: "Fetched class details",
+      data: cls,
+    });
   } catch (err) {
-    console.log(err);
-    reply.code(400).send({ success: false, message: "Unable to fetch Class details" });
+    return sendPrismaError(reply, err, req);
   }
 }
 
 export async function class_all_get(req, reply) {
   try {
-    const { campus_id } = req.query
-    let classes = []
-    if (campus_id) {
-      classes = await getAllClasses({ extras: true }, { campus_id });
-
-    } else {
-      classes = await getAllClasses({ extras: true });
-    }
-    classes = classes.map((_class) => ({ ..._class, label: _class.class_name, value: _class.class_id }))
-
-    reply.send({ success: true, message: "Fetched all Classes", data: classes });
+    const { campus_id } = req.query;
+    const where = campus_id ? { campus_id } : {};
+    const classes = await getAllClasses({
+      omit: { extras: true },
+      where,
+    });
+    const data = classes.map((c) => ({
+      ...c,
+      label: c.class_name,
+      value: c.class_id,
+    }));
+    return reply.send({
+      success: true,
+      message: "Fetched all classes",
+      data,
+    });
   } catch (err) {
-    console.log(err);
-    reply.code(400).send({ success: false, message: "Unable to fetch Classes details" });
+    return sendPrismaError(reply, err, req);
   }
 }
 
 export async function class_delete(req, reply) {
   try {
     const { class_id } = req.query;
-    const result = await deleteClass(class_id);
-
-    if (!result) throw new Error();
-
-    reply.send({ success: true, message: "Class Deleted Successfully" });
+    await deleteClass(class_id);
+    return reply.send({
+      success: true,
+      message: "Class deleted successfully",
+      data: null,
+    });
   } catch (err) {
-    console.log(err);
-    reply.code(400).send({ success: false, message: "Unable to delete Class" });
+    return sendPrismaError(reply, err, req);
   }
 }

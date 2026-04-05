@@ -8,7 +8,7 @@ export const userCreateRequestSchema = {
       "password",
       "isadmin",
       "site_permissions",
-      "page_permissions"
+      "page_permissions",
     ],
     properties: {
       userid: { type: "string" },
@@ -16,32 +16,26 @@ export const userCreateRequestSchema = {
       password: { type: "string" },
       isadmin: { type: "boolean" },
       site_permissions: { type: "array" },
-      page_permissions: { type: "array" }
-    }
-  }
-}
+      page_permissions: { type: "array" },
+    },
+  },
+};
 
-export const userEditRequestSchema = {
+export const userUpdateRequestSchema = {
   tags: ["User"],
   body: {
     type: "object",
-    required: [
-      "userid",
-      "username",
-      "isadmin",
-      "site_permissions",
-      "page_permissions"
-    ],
+    required: ["userid"],
     properties: {
       userid: { type: "string" },
       username: { type: "string" },
       password: { type: "string" },
       isadmin: { type: "boolean" },
       site_permissions: { type: "array" },
-      page_permissions: { type: "array" }
-    }
-  }
-}
+      page_permissions: { type: "array" },
+    },
+  },
+};
 
 export const userGetRequestSchema = {
   tags: ["User"],
@@ -49,7 +43,7 @@ export const userGetRequestSchema = {
     type: "object",
     required: ["userid"],
     properties: {
-      userid: { type: "string" }
-    }
-  }
-}
+      userid: { type: "string" },
+    },
+  },
+};

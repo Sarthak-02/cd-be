@@ -1,4 +1,3 @@
-import { getUser, validateUser } from "../../db/user.db.js";
 import bcrypt from "bcrypt"
 import { clearCache, getUserDetails } from "../../utils/cache/user.cache.js";
 

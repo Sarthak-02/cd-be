@@ -31,7 +31,7 @@ const startUserfacing = async () => {
   }
 };
 
-// startOnboarding()
-startUserfacing()
+startOnboarding()
+// startUserfacing()
 
 

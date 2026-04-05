@@ -1,41 +1,61 @@
 export const sectionCreateRequestSchema = {
-    tags: ["Section"],
-    body: {
-        type: "object",
-        required: ["section_name", "class_id"],
-        properties: {
-            section_id: { type: "string" },
+  tags: ["Section"],
+  body: {
+    type: "object",
+    required: ["section_name", "class_id"],
+    properties: {
+      section_id: { type: "string" },
 
-            section_name: { type: "string" },
-            section_short_name: { type: "string", nullable: true },
-            section_teacher_id: { type: "string", nullable: true },
-            section_room_no: { type: "string", nullable: true },
+      section_name: { type: "string" },
+      section_short_name: { type: "string", nullable: true },
+      section_teacher_id: { type: "string", nullable: true },
+      section_room_no: { type: "string", nullable: true },
 
-            extras: { type: "object", nullable: true },
+      extras: { type: "object", nullable: true },
 
-            class_id: { type: "string" },
+      class_id: { type: "string" },
+    },
+  },
+};
 
-        }
-    }
-}
+export const sectionUpdateRequestSchema = {
+  tags: ["Section"],
+  body: {
+    type: "object",
+    required: ["section_id"],
+    properties: {
+      section_id: { type: "string" },
+
+      section_name: { type: "string" },
+      section_short_name: { type: "string", nullable: true },
+      section_teacher_id: { type: "string", nullable: true },
+      section_room_no: { type: "string", nullable: true },
+
+      extras: { type: "object", nullable: true },
+
+      class_id: { type: "string" },
+      campus_id: { type: "string", nullable: true },
+    },
+  },
+};
 
 export const sectionGetRequestSchema = {
-    tags: ["Section"],
-    querystring: {
-        type: "object",
-        required: ["section_id"],
-        properties: {
-            section_id: { type: "string" }
-        }
-    }
-}
+  tags: ["Section"],
+  querystring: {
+    type: "object",
+    required: ["section_id"],
+    properties: {
+      section_id: { type: "string" },
+    },
+  },
+};
 
 export const sectionByCampusGetRequestSchema = {
-    tags: ["Section"],
-    querystring: {
-        type: "object",
-        properties: {
-            campus_id: { type: "string" }
-        }
-    }
-}
+  tags: ["Section"],
+  querystring: {
+    type: "object",
+    properties: {
+      campus_id: { type: "string" },
+    },
+  },
+};

@@ -1,85 +1,40 @@
-import {prisma} from "../prisma/prisma.js"
+import { prisma } from "../prisma/prisma.js";
 
-export async function createUser(data){
-    let newUser = null
-    try{
-        newUser = await prisma.user.create({data})
-    }
-    catch(err){
-        console.log(err)
-        return false
-    }
-
-    return true
+export async function createUser(data) {
+  return prisma.user.create({ data });
 }
 
-export async function getUser(userid,omit={}) {
-    let user = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { userid },
-        omit
-      });
-    } catch (err) {
-      console.log(err);
-    }
-    return user;
-  }
-
+export async function getUser(userid, omit = {}) {
+  return prisma.user.findUnique({
+    where: { userid },
+    omit,
+  });
+}
 
 export async function getAllUsers() {
-    let users = null
-    try{
-        users = await prisma.user.findMany({
-          omit: {
-            password: true,
-          },
-        })
-    }
-    catch(err){
-        console.log(err)
-    }
-
-    return users
+  return prisma.user.findMany({
+    omit: { password: true },
+  });
 }
 
 export async function updateUser(data) {
-  let updateUser = null
-    try{
-      updateUser = prisma.user.update({
-            where:{
-                userid:data?.userid
-            },
-            data
-        })
-    }
-    catch(err){
-        console.log(err)
-    }
-    return updateUser
+  const { userid, ...rest } = data;
+  const updates = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== undefined),
+  );
+  if (Object.keys(updates).length === 0) {
+    const err = new Error("NO_FIELDS_TO_UPDATE");
+    err.code = "NO_FIELDS_TO_UPDATE";
+    throw err;
+  }
+  return prisma.user.update({
+    where: { userid },
+    data: updates,
+  });
 }
-
-export async function validateUser(userid,password){
-    let user = null;
-    try {
-      user = await fastify.prisma.user.findUnique({
-        where: { userid ,password }
-      });
-    } catch (err) {
-      console.log(err);
-    }
-    return user;
-}
-
 
 export async function deleteUser(userid) {
-  try {
-    await fastify.prisma.user.delete({
-      where: { userid },
-    });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  await prisma.user.delete({
+    where: { userid },
+  });
 }
