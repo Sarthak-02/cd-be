@@ -19,6 +19,7 @@ function getRecipientType(targetType) {
 export async function createBroadcastDraft({
   title,
   message,
+  category,
   attachmentUrls = [],
   createdBy,
   campusId,
@@ -43,6 +44,7 @@ export async function createBroadcastDraft({
       data: {
         title,
         message,
+        ...(category !== undefined && category !== null ? { category } : {}),
         createdBy,
         campusId,
         status: "DRAFT",
@@ -122,7 +124,11 @@ export async function sendBroadcast(broadcastId, campusId) {
         status: "PENDING",
         sourceType: "BROADCAST",
         sourceId: broadcast.id,
-        payload: null
+        payload: {
+          title: broadcast.title,
+          message: broadcast.message,
+          category: broadcast.category,
+        },
       });
     }
 
@@ -210,6 +216,7 @@ async function enrichBroadcastsForReceiver(broadcasts) {
     id: broadcast.id,
     title: broadcast.title,
     message: broadcast.message,
+    category: broadcast.category,
     createdBy: broadcast.createdBy,
     senderName: senderMap.get(broadcast.createdBy) || "Unknown",
     campusId: broadcast.campusId,
@@ -334,6 +341,7 @@ export async function getBroadcastsByCreatedBy(createdBy, campusId) {
       id: true,
       title: true,
       message: true,
+      category: true,
       createdBy: true,
       campusId: true,
       status: true,
@@ -364,12 +372,20 @@ export async function getBroadcastById(broadcastId) {
 }
 
 // Fetch all broadcasts with optional filters
-export async function getAllBroadcasts({ campusId, status, createdBy, limit = 100, offset = 0 }) {
+export async function getAllBroadcasts({
+  campusId,
+  status,
+  createdBy,
+  category,
+  limit = 100,
+  offset = 0,
+}) {
   const where = {};
   
   if (campusId) where.campusId = campusId;
   if (status) where.status = status;
   if (createdBy) where.createdBy = createdBy;
+  if (category) where.category = category;
 
   const [broadcasts, total] = await Promise.all([
     prisma.broadcastNotification.findMany({
@@ -417,7 +433,7 @@ export async function getAllBroadcasts({ campusId, status, createdBy, limit = 10
 
 // Update broadcast (only allowed for DRAFT status)
 export async function updateBroadcast(broadcastId, updateData) {
-  const { title, message, attachmentUrls, targets } = updateData;
+  const { title, message, category, attachmentUrls, targets } = updateData;
 
   return prisma.$transaction(async (tx) => {
     // 1️⃣ Check if broadcast exists and is in DRAFT status
@@ -437,6 +453,7 @@ export async function updateBroadcast(broadcastId, updateData) {
     const updatePayload = {};
     if (title !== undefined) updatePayload.title = title;
     if (message !== undefined) updatePayload.message = message;
+    if (category !== undefined) updatePayload.category = category;
 
     // 3️⃣ Update broadcast if there are fields to update
     let updatedBroadcast = existingBroadcast;

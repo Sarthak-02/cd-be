@@ -392,6 +392,7 @@ model BroadcastNotification {
   id        String          @id @default(uuid())
   title     String
   message   String
+  category  String @default("general")
   createdBy String // teacher/admin
   campusId  String
   status    BroadcastStatus // DRAFT | NOTIFYING | SUBMITTED

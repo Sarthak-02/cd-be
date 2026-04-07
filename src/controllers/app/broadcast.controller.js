@@ -13,6 +13,7 @@ export async function broadcast_post(req, reply) {
     const {
       title,
       message,
+      category,
       attachmentUrls,
       targets,
       campusId,
@@ -22,6 +23,7 @@ export async function broadcast_post(req, reply) {
     const broadcast = await createBroadcastDraft({
       title,
       message,
+      category,
       attachmentUrls,
       createdBy: userId,
       campusId,
@@ -117,6 +119,7 @@ export async function broadcast_get_all(req, reply) {
       campusId, 
       status, 
       createdBy,
+      category,
       sourceType,
       limit = 100, 
       offset = 0 
@@ -126,6 +129,7 @@ export async function broadcast_get_all(req, reply) {
       campusId,
       status,
       createdBy,
+      category,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -149,7 +153,7 @@ export async function broadcast_get_all(req, reply) {
 export async function broadcast_update(req, reply) {
   try {
     const { id } = req.params;
-    const { title, message, attachmentUrls, targets } = req.body;
+    const { title, message, category, attachmentUrls, targets } = req.body;
 
     if (!id) {
       return reply.code(400).send({ error: "id is required" });
@@ -158,6 +162,7 @@ export async function broadcast_update(req, reply) {
     const updatedBroadcast = await updateBroadcast(id, {
       title,
       message,
+      category,
       attachmentUrls,
       targets,
     });

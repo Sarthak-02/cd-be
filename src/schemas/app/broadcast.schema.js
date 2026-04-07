@@ -7,6 +7,11 @@ export const BroadcastCreateRequestSchema = {
         properties: {
             title: { type: "string" },
             message: { type: "string" },
+            category: {
+                type: "string",
+                description:
+                    "Announcement category for UI (e.g. urgent, information, fun). Defaults to \"general\" if omitted.",
+            },
             attachmentUrls: {
                 type: "array",
                 items: { type: "object" }
@@ -78,6 +83,7 @@ export const BroadcastGetAllSchema = {
                 description: "Filter by notification source type. For broadcasts, use BROADCAST or omit."
             },
             createdBy: { type: "string" },
+            category: { type: "string" },
             limit: { 
                 type: "number",
                 minimum: 1,
@@ -107,6 +113,7 @@ export const BroadcastUpdateSchema = {
         properties: {
             title: { type: "string" },
             message: { type: "string" },
+            category: { type: "string" },
             attachmentUrls: {
                 type: "array",
                 items: { type: "object" }
