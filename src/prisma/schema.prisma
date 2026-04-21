@@ -101,6 +101,19 @@ enum LessonPlanStatus {
   PARTIALLY_COMPLETED
 }
 
+enum ClassPlanTopicStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum TopicAssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
 enum SubmissionStatus {
   PENDING
   SUBMITTED
@@ -177,6 +190,7 @@ model Campus {
   students Student[]
   teachers Teacher[]
   lessonPlans LessonPlan[]
+  classPlans  ClassPlan[]
 
   @@index([school_id])
 }
@@ -305,6 +319,7 @@ model Teacher {
   homework           Homework[]
   gradedSubmissions  HomeworkSubmission[] @relation("HomeworkGradedBy")
   lessonPlans        LessonPlan[]
+  classPlans         ClassPlan[]
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
@@ -754,6 +769,121 @@ model LessonPlanAttachment {
   createdAt DateTime @default(now())
 
   @@index([lessonPlanId])
+}
+
+model MasterLessonPlan {
+  id           String   @id @default(uuid())
+  className    String
+  subject      String
+  board        String
+  academicYear String
+  /// JSON array of { chapter, topics[], month?, estimated_weeks? }
+  details      Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classPlans ClassPlan[]
+
+  @@unique([className, subject, board, academicYear])
+  @@index([className, subject, board])
+  @@index([board])
+  @@index([academicYear])
+}
+
+model ClassPlan {
+  id           String  @id @default(uuid())
+  masterPlanId String?
+  masterPlan   MasterLessonPlan? @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+
+  campusId String
+  campus   Campus @relation(fields: [campusId], references: [campus_id])
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
+
+  className    String
+  subject      String
+  academicYear String
+  isPublished  Boolean @default(false)
+
+  topics ClassPlanTopic[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teacherId, campusId, className, subject, academicYear])
+  @@index([campusId, academicYear])
+  @@index([teacherId])
+}
+
+model ClassPlanTopic {
+  id          String    @id @default(uuid())
+  classPlanId String
+  classPlan   ClassPlan @relation(fields: [classPlanId], references: [id], onDelete: Cascade)
+
+  chapterTitle       String
+  chapterNumber      Int?
+  title              String
+  displayOrder       Float
+  status             ClassPlanTopicStatus @default(PENDING)
+  scheduledDate      DateTime?            @db.Date
+  completedOn        DateTime?            @db.Date
+  actualDurationMins Int?
+  teacherNotes       String?              @db.Text
+  isAddedByTeacher   Boolean              @default(false)
+
+  materials   TopicMaterial[]
+  assignments TopicAssignment[]
+  quizzes     TopicQuiz[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([classPlanId, chapterNumber, displayOrder])
+}
+
+model TopicMaterial {
+  id           String         @id @default(uuid())
+  topicId      String
+  topic        ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  fileName   String
+  fileUrl    String
+
+  createdAt DateTime @default(now())
+
+  @@index([topicId])
+}
+
+model TopicAssignment {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  title   String
+  dueDate DateTime?              @db.Date
+  fileUrl String?
+  status  TopicAssignmentStatus  @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([topicId])
+}
+
+model TopicQuiz {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  title          String
+  generatedByAi  Boolean @default(false)
+  fileUrl        String?
+
+  createdAt DateTime @default(now())
+
+  @@index([topicId])
 }
 
 model Scholarship {
