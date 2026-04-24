@@ -94,6 +94,20 @@ enum HomeworkStatus {
   CLOSED
 }
 
+enum PickupRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  EXPIRED
+}
+
+enum PickupSource {
+  AUTHORIZED_PERSON
+  ONE_TIME_REQUEST
+  MANUAL
+}
+
 enum LessonPlanStatus {
   PLANNED
   COMPLETED
@@ -270,6 +284,9 @@ model Student {
   parents             Parent[]
   homeworkSubmissions HomeworkSubmission[]
   examGrades          ExamGrade[]
+  authorizedPickupPersons AuthorizedPickupPerson[]
+  pickupRequests          PickupRequest[]
+  pickupLogs              PickupLog[]
   
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
@@ -320,6 +337,7 @@ model Teacher {
   gradedSubmissions  HomeworkSubmission[] @relation("HomeworkGradedBy")
   lessonPlans        LessonPlan[]
   classPlans         ClassPlan[]
+  pickupLogs         PickupLog[]
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
@@ -913,4 +931,95 @@ model Scholarship {
   @@index([status])
   @@index([category])
   @@index([sourceType])
+}
+
+// ─── Pickup Feature ───────────────────────────────────────────────────────────
+
+/// People pre-approved by parents to pick up a student (reusable)
+model AuthorizedPickupPerson {
+  id           String  @id @default(uuid())
+  studentId    String
+  student      Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  name         String
+  relationship String  // e.g. "Uncle", "Grandmother", "Family Friend"
+  photoUrl     String?
+  remarks      String?
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pickupLogs PickupLog[]
+
+  @@index([studentId])
+  @@index([studentId, isActive])
+}
+
+/// One-time pickup request submitted by a parent for a specific date
+model PickupRequest {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  // Person who will come to pick up
+  name         String
+  relationship String
+  photoUrl     String?  // pre-submitted photo to verify identity at gate
+  remarks      String?
+
+  // Validity
+  validDate DateTime @db.Date  // the date this request is valid for
+
+  // Who raised the request
+  requestedBy String  // free-form identifier (e.g. phone, name)
+
+  // Approval workflow
+  status        PickupRequestStatus @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectedBy    String?
+  rejectionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pickupLog PickupLog?
+
+  @@index([studentId, validDate])
+  @@index([studentId, status])
+  @@index([requestedBy])
+  @@index([validDate, status])
+}
+
+/// Teacher-confirmed record of a student being picked up
+model PickupLog {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  pickedUpAt  DateTime  // actual timestamp of pickup
+  confirmedBy String    // teacher_id
+  teacher     Teacher   @relation(fields: [confirmedBy], references: [teacher_id])
+
+  pickupPhotoUrl String?  // optional photo taken at pickup time
+
+  // Source of the pickup authorization
+  source             PickupSource
+  authorizedPersonId String?
+  authorizedPerson   AuthorizedPickupPerson? @relation(fields: [authorizedPersonId], references: [id])
+  pickupRequestId    String?                 @unique
+  pickupRequest      PickupRequest?          @relation(fields: [pickupRequestId], references: [id])
+
+  // Denormalized for audit trail — person details at time of pickup
+  personName         String
+  personRelationship String
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, pickedUpAt])
+  @@index([confirmedBy])
+  @@index([studentId])
 }

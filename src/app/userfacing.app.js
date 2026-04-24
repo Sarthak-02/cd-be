@@ -17,6 +17,7 @@ import chatRoutes from '../routes/app/chat.route.js'
 import lessonPlanRoutes from '../routes/app/lessonPlan.route.js'
 import masterLessonPlanRoutes from '../routes/app/masterLessonPlan.route.js'
 import classPlanRoutes from '../routes/app/classPlan.route.js'
+import pickupRoutes from '../routes/app/pickup.route.js'
 
 
 dotenv.config()
@@ -43,6 +44,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(lessonPlanRoutes)
       await appRoutes.register(masterLessonPlanRoutes)
       await appRoutes.register(classPlanRoutes)
+      await appRoutes.register(pickupRoutes)
 
     }, { prefix: '/userfacing' })
   
