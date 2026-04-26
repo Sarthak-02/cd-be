@@ -1,4 +1,22 @@
-import { getTeacherPermissions } from "../../db/teacher.db.js";
+import { getTeacherPermissions, getTeachersBySection } from "../../db/teacher.db.js";
+
+export async function teacher_list_by_section_post(req, reply) {
+  try {
+    const { campus_id, section_id } = req.body;
+    const teachers = await getTeachersBySection({ campus_id, section_id });
+    reply.send({
+      success: true,
+      message: "Teachers fetched successfully",
+      data: teachers,
+    });
+  } catch (err) {
+    console.log(err);
+    reply.code(500).send({
+      success: false,
+      message: "Unable to fetch teachers",
+    });
+  }
+}
 
 export async function teacher_permissions_get(req, reply) {
   try {
