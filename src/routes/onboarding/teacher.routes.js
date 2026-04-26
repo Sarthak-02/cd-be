@@ -4,12 +4,14 @@ import {
   teacher_get,
   teacher_all_get,
   teacher_delete,
+  teacher_list_by_section_post,
 } from "../../controllers/onboarding/teacher.controller.js";
 import {
   teacherCreateRequestSchema,
   teacherGetRequestSchema,
   teacherByCampusGetRequestSchema,
   teacherUpdateRequestSchema,
+  teacherListBySectionRequestSchema,
 } from "../../schemas/onboarding/teacher.schema.js";
 
 const teacherCreateOpts = {
@@ -40,12 +42,20 @@ const teacherByCampusGetOpts = {
   },
 };
 
+const teacherListBySectionOpts = {
+  schema: {
+    tags: teacherListBySectionRequestSchema.tags,
+    body: teacherListBySectionRequestSchema.body,
+  },
+};
+
 async function teacherRoutes(app, options) {
   app.post("/teacher", teacherCreateOpts, teacher_post);
   app.put("/teacher", teacherUpdateOpts, teacher_put);
   app.get("/teacher", teacherGetOpts, teacher_get);
   app.get("/teacher/all", teacherByCampusGetOpts, teacher_all_get);
   app.delete("/teacher", teacherGetOpts, teacher_delete);
+  app.post("/teacher/list-by-section", teacherListBySectionOpts, teacher_list_by_section_post);
 }
 
 export default teacherRoutes;

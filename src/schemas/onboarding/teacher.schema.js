@@ -79,3 +79,15 @@ export const teacherByCampusGetRequestSchema = {
     },
   },
 };
+
+export const teacherListBySectionRequestSchema = {
+  tags: ["Teacher"],
+  body: {
+    type: "object",
+    required: ["campus_id", "section_id"],
+    properties: {
+      campus_id: { type: "string", minLength: 1 },
+      section_id: { type: "string", minLength: 1 },
+    },
+  },
+};

@@ -4,6 +4,7 @@ import {
   getAllTeachers,
   updateTeacher,
   deleteTeacher,
+  getTeachersBySection,
 } from "../../db/teacher.db.js";
 
 function teacherDisplayName(teacher) {
@@ -114,6 +115,20 @@ export async function teacher_all_get(req, reply) {
       success: true,
       message: "Fetched all teachers",
       data,
+    });
+  } catch (err) {
+    return sendPrismaError(reply, err, req);
+  }
+}
+
+export async function teacher_list_by_section_post(req, reply) {
+  try {
+    const { campus_id, section_id } = req.body;
+    const teachers = await getTeachersBySection({ campus_id, section_id });
+    return reply.send({
+      success: true,
+      message: "Teachers fetched successfully",
+      data: teachers,
     });
   } catch (err) {
     return sendPrismaError(reply, err, req);

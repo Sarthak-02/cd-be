@@ -45,6 +45,28 @@ export async function deleteTeacher(teacher_id) {
   });
 }
 
+export async function getTeachersBySection({ campus_id, section_id }) {
+  return prisma.teacher.findMany({
+    where: {
+      campus_id,
+      teacher_status: "active",
+      extras: {
+        path: ["teacher_sections"],
+        array_contains: section_id,
+      },
+    },
+    select: {
+      teacher_id: true,
+      teacher_first_name: true,
+      teacher_middle_name: true,
+      teacher_last_name: true,
+    },
+    orderBy: {
+      teacher_first_name: "asc",
+    },
+  });
+}
+
 export async function getTeacherPermissions(teacher_id) {
   try {
     const teacher = await prisma.teacher.findUnique({
