@@ -86,6 +86,34 @@ export const StudentAttendanceGetSchema = {
   }
 }
 
+export const AttendanceEditRequestSchema = {
+  tags: ["Attendance"],
+  body: {
+    type: "object",
+    required: ["session_id", "teacher_id", "records"],
+    properties: {
+      session_id: { type: "string" },
+      teacher_id: { type: "string" },
+      records: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          required: ["student_id", "status"],
+          properties: {
+            student_id: { type: "string" },
+            status: {
+              type: "string",
+              enum: ["PRESENT", "ABSENT", "LATE", "EXCUSED"]
+            }
+          },
+          additionalProperties: false
+        }
+      }
+    }
+  }
+}
+
 export const TodayScheduleGetSchema = {
   tags: ["Attendance"],
   body: {

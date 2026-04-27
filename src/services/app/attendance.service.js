@@ -126,6 +126,25 @@ export async function bulkCreateAttendance({
     });
   }
 
+export async function editAttendance({ session_id, teacher_id, records }) {
+    return await prisma.$transaction(async (tx) => {
+        const session = await tx.attendanceSession.findUnique({
+            where: { id: session_id },
+            select: { status: true },
+        });
+
+        if (!session) throw new Error("Attendance session not found");
+        if (session.status === "LOCKED") throw new Error("Cannot edit a locked attendance session");
+
+        await bulkUpsertAttendanceRecords(
+            { attendanceSessionId: session_id, records, updatedBy: teacher_id },
+            tx
+        );
+
+        return session_id;
+    });
+}
+
 /**
  * Get today's schedule entries for a section
  * @param {Object} data - Section timetable data with days, slots, and entries
