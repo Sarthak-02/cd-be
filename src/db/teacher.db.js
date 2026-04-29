@@ -131,6 +131,46 @@ export async function getTeacherPermissions(teacher_id) {
       },
     });
 
+    const classesMap = new Map();
+    for (const section of sections) {
+      if (!classesMap.has(section.classRef.class_id)) {
+        classesMap.set(section.classRef.class_id, {
+          class_id: section.classRef.class_id,
+          class_name: section.classRef.class_name,
+        });
+      }
+    }
+
+    const sectionSubjectsMap = new Map();
+    const formattedSections = sections.map((section) => {
+      const sectionSubjects = section.extras?.section_subjects || [];
+      for (const subject of sectionSubjects) {
+        const key = subject.subject_id || subject;
+        if (!sectionSubjectsMap.has(key)) sectionSubjectsMap.set(key, subject);
+      }
+      return {
+        class_id: section.classRef.class_id,
+        section_id: section.section_id,
+        section_name: section.section_name,
+        section_subjects: sectionSubjects,
+      };
+    });
+
+    const students = sections.flatMap((section) =>
+      section.students.map((student) => ({
+        student_id: student.student_id,
+        student_name: [
+          student.student_first_name,
+          student.student_middle_name,
+          student.student_last_name,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        student_roll_no: student.student_roll_no,
+        section_id: student.student_section_id,
+      }))
+    );
+
     return {
       teacher_id: teacher.teacher_id,
       teacher_name: [
@@ -146,7 +186,10 @@ export async function getTeacherPermissions(teacher_id) {
       campus_grades_notification:
         teacher.campus.extras?.campus_grades_notification || null,
       campus_exam_types: teacher.campus.extras?.campus_exam_types || null,
-      permissions: sections,
+      classes: Array.from(classesMap.values()),
+      sections: formattedSections,
+      students,
+      all_section_subjects: Array.from(sectionSubjectsMap.values()),
     };
   } catch (err) {
     console.log(err);

@@ -75,13 +75,10 @@ export async function create_homework(req, reply) {
                 throw new Error("Failed to publish homework and send notifications");
             }
 
-            // Fetch updated homework after publishing
-            const updatedHomework = await getHomeworkById(homework.id);
-
             return reply.send({
                 success: true,
                 message: "Homework created and published successfully",
-                data: updatedHomework,
+                data: { ...homework, status: "PUBLISHED" },
                 notificationStats: {
                     queuedCount: publishResult.queuedCount,
                     studentCount: publishResult.studentCount

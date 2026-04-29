@@ -100,20 +100,18 @@ export async function createConversationController(req, reply) {
       });
     }
 
-    const me = await getParticipant(conversation.id, userInfo.userid);
-    const unread_count = await countUnreadMessages(
-      conversation.id,
-      userInfo.userid,
-      me?.lastReadAt
-    );
-
+    const me = conversation.participants.find((p) => p.userId === userInfo.userid);
     const other =
       conversation.type === "DIRECT"
         ? conversation.participants.find((p) => p.userId !== userInfo.userid)
         : null;
-    const displayNameMap = other
-      ? await resolveParticipantDisplayNames([{ userId: other.userId, userRole: other.userRole }])
-      : new Map();
+
+    const [unread_count, displayNameMap] = await Promise.all([
+      countUnreadMessages(conversation.id, userInfo.userid, me?.lastReadAt),
+      other
+        ? resolveParticipantDisplayNames([{ userId: other.userId, userRole: other.userRole }])
+        : Promise.resolve(new Map()),
+    ]);
 
     const payload = formatConversationDetail(conversation, {
       unread_count,
