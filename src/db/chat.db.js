@@ -269,6 +269,20 @@ export async function countUnreadMessages(conversationId, readerUserId, lastRead
   });
 }
 
+export async function batchCountUnreadMessages(userId) {
+  const rows = await prisma.$queryRaw`
+    SELECT cp."conversationId", COUNT(m.id)::int AS unread_count
+    FROM "ChatParticipant" cp
+    LEFT JOIN "ChatMessage" m
+      ON m."conversationId" = cp."conversationId"
+      AND m."senderUserId" != ${userId}
+      AND m."createdAt" > COALESCE(cp."lastReadAt", '1970-01-01 00:00:00+00'::timestamptz)
+    WHERE cp."userId" = ${userId}
+    GROUP BY cp."conversationId"
+  `;
+  return new Map(rows.map(r => [r.conversationId, Number(r.unread_count)]));
+}
+
 export async function listMessages(conversationId, { after, before, limit = 50 }) {
   const take = Math.min(Math.max(Number(limit) || 50, 1), 200);
   const where = { conversationId };

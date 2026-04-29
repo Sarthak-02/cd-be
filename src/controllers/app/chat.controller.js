@@ -5,6 +5,7 @@ import {
   getConversationById,
   listConversationsForUser,
   countUnreadMessages,
+  batchCountUnreadMessages,
   listMessages,
   createChatMessage,
   markConversationRead,
@@ -142,7 +143,10 @@ export async function listConversationsController(req, reply) {
       return reply.code(401).send({ success: false, error: "Unauthorized" });
     }
 
-    const rows = await listConversationsForUser(userInfo.userid);
+    const [rows, unreadCountMap] = await Promise.all([
+      listConversationsForUser(userInfo.userid),
+      batchCountUnreadMessages(userInfo.userid),
+    ]);
 
     const directOthers = [];
     for (const { conversation } of rows) {
@@ -155,19 +159,12 @@ export async function listConversationsController(req, reply) {
     }
     const displayNameMap = await resolveParticipantDisplayNames(directOthers);
 
-    const data = await Promise.all(
-      rows.map(async ({ participant, conversation }) => {
-        const unread_count = await countUnreadMessages(
-          conversation.id,
-          userInfo.userid,
-          participant.lastReadAt
-        );
-        return formatConversationDetail(conversation, {
-          unread_count,
-          my_participant: participant,
-          displayNameMap,
-          currentUserId: userInfo.userid,
-        });
+    const data = rows.map(({ participant, conversation }) =>
+      formatConversationDetail(conversation, {
+        unread_count: unreadCountMap.get(conversation.id) ?? 0,
+        my_participant: participant,
+        displayNameMap,
+        currentUserId: userInfo.userid,
       })
     );
 
