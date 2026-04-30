@@ -99,6 +99,46 @@ export const BroadcastGetAllSchema = {
     }
 }
 
+export const BroadcastAttachmentUploadUrlSchema = {
+    tags: ["Broadcast"],
+    body: {
+        type: "object",
+        required: ["file_name", "mime_type"],
+        properties: {
+            broadcast_id: {
+                type: "string",
+                description: "Broadcast ID (optional - if not provided, a temporary ID will be generated)"
+            },
+            campus_id: {
+                type: "string",
+                description: "Campus/school ID for scoped storage path"
+            },
+            file_name: { type: "string", minLength: 1 },
+            mime_type: {
+                type: "string",
+                enum: [
+                    "application/pdf",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "text/plain",
+                    "image/jpeg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/tiff",
+                    "image/bmp",
+                    "image/ico",
+                ]
+            }
+        }
+    }
+}
+
 export const BroadcastUpdateSchema = {
     tags: ["Broadcast"],
     params: {

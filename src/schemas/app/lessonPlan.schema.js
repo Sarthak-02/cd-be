@@ -189,6 +189,10 @@ export const LessonPlanGenerateUploadUrlSchema = {
         type: "string",
         description: "Existing plan id, or omit for pre-create upload (temp path)",
       },
+      campus_id: {
+        type: "string",
+        description: "Campus/school ID for scoped storage path",
+      },
       file_name: { type: "string", minLength: 1 },
       mime_type: { type: "string" },
     },

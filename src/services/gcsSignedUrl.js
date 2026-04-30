@@ -79,17 +79,18 @@ export async function generateDocumentUploadSignedUrl({
   entityId,
   fileName,
   mimeType,
+  campus_id,
 }) {
   const ext = DOCUMENT_EXTENSION_MAP[mimeType];
-  
+
   if (!ext) {
     throw new Error(`Unsupported file type: ${mimeType}`);
   }
 
-  // Generate a unique timestamp to avoid filename collisions
   const timestamp = Date.now();
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const objectPath = `documents/${entity}/${entityId}/${timestamp}_${sanitizedFileName}`;
+  const prefix = campus_id ? campus_id : 'documents';
+  const objectPath = `${prefix}/${entity}/${entityId}/${timestamp}_${sanitizedFileName}`;
   const file = storage.bucket(DOCUMENT_BUCKET_NAME).file(objectPath);
 
   const [uploadUrl] = await file.getSignedUrl({

@@ -658,7 +658,7 @@ export async function get_overdue_homework(req, reply) {
  */
 export async function generate_attachment_upload_url(req, reply) {
     try {
-        let { homework_id, file_name, mime_type } = req.body;
+        let { homework_id, file_name, mime_type, campus_id } = req.body;
 
         if (!file_name || !mime_type) {
             return reply.code(400).send({
@@ -703,7 +703,8 @@ export async function generate_attachment_upload_url(req, reply) {
             entity: "homework",
             entityId: homework_id,
             fileName: file_name,
-            mimeType: mime_type
+            mimeType: mime_type,
+            campus_id: campus_id,
         });
 
         reply.send({
