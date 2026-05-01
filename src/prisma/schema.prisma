@@ -992,6 +992,37 @@ model PickupRequest {
   @@index([validDate, status])
 }
 
+// ─── Report Dashboard Config ────────────────────────────────────────────────
+
+enum ReportConfigStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model ReportDashboardConfig {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  campusId    String
+  schoolLevel String
+  useGrades   Boolean            @default(false)
+  status      ReportConfigStatus @default(DRAFT)
+
+  enabledClasses Json // array of class UUIDs
+  skills         Json // array of skill objects
+  ratingScale    Json // rating scale config (type, points, labels, emoji_set, etc.)
+  display        Json // layout, charts, show_teacher_comments, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campusId])
+  @@index([campusId, status])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 /// Teacher-confirmed record of a student being picked up
 model PickupLog {
   id        String  @id @default(uuid())

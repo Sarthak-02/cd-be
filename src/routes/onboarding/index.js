@@ -7,6 +7,7 @@ import sectionRoutes from "./section.routes.js";
 import studentRoutes from "./student.routes.js";
 import teacherRoutes from "./teacher.routes.js";
 import { uploadRoutes } from "./upload.route.js";
+import reportDashboardConfigRoutes from "./reportDashboardConfig.routes.js";
 
 export {
     authRoutes,
@@ -17,5 +18,6 @@ export {
     sectionRoutes,
     studentRoutes,
     teacherRoutes,
-    uploadRoutes
+    uploadRoutes,
+    reportDashboardConfigRoutes,
 }
