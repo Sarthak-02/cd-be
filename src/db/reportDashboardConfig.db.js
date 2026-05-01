@@ -25,3 +25,13 @@ export async function updateReportDashboardConfig(id, updates) {
 export async function deleteReportDashboardConfig(id) {
   return prisma.reportDashboardConfig.delete({ where: { id } });
 }
+
+export async function getPublishedConfigForSection(campusId, classId) {
+  return prisma.reportDashboardConfig.findFirst({
+    where: {
+      campusId,
+      status: "PUBLISHED",
+      enabledClasses: { array_contains: classId },
+    },
+  });
+}
