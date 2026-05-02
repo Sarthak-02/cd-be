@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { getEndUserByUsername, createEndUser } from "../../db/enduser.db.js";
+import { getEndUserByUsername, createEndUser, incrementTokenVersion } from "../../db/enduser.db.js";
 import { loginEndUser } from "../../services/app/auth.service.js";
 import { clearEndUserCache } from "../../utils/cache/enduser.cache.js";
 
@@ -85,8 +85,8 @@ export async function logoutController(req, reply) {
   try {
     const userInfo = req.token_info;
 
-    // Clear cache for the user
     if (userInfo?.userid) {
+      await incrementTokenVersion(userInfo.userid);
       await clearEndUserCache(userInfo.userid);
     }
 

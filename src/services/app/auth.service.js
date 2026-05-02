@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { getEndUserByUsername } from "../../db/enduser.db.js";
+import { getEndUserByUsername, updateEndUserByUserid } from "../../db/enduser.db.js";
 import { getStudent } from "../../db/student.db.js";
 import { getTeacher } from "../../db/teacher.db.js";
 import { getSectionsByIds } from "../../db/section.db.js";
@@ -31,6 +31,9 @@ export async function loginEndUser({ username, password }) {
     err.status = 401;
     throw err;
   }
+
+  const previousLastLoginAt = user.lastLoginAt;
+  await updateEndUserByUserid(user.userid, { lastLoginAt: new Date() });
 
   let details = null;
   let sections = null;
@@ -90,6 +93,8 @@ export async function loginEndUser({ username, password }) {
   
   const safeUser = {
     ...user,
+    lastLoginAt: previousLastLoginAt,
+    isFirstLogin: previousLastLoginAt === null,
     details,
     campus
   };
@@ -99,7 +104,8 @@ export async function loginEndUser({ username, password }) {
   const token = {
     userid: user.userid,
     username: user.username,
-    role: user.role
+    role: user.role,
+    tokenVersion: user.tokenVersion,
   };
 
   return { token, user: safeUser };

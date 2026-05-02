@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 
 
 
-import { authRoutes, campusRoutes, classRoutes, schoolRoutes, sectionRoutes, studentRoutes, teacherRoutes, uploadRoutes, userRoutes, reportDashboardConfigRoutes } from '../routes/onboarding/index.js'
+import { authRoutes, campusRoutes, classRoutes, schoolRoutes, sectionRoutes, studentRoutes, teacherRoutes, uploadRoutes, userRoutes, reportDashboardConfigRoutes, endUserRoutes } from '../routes/onboarding/index.js'
 import { buildOnboarding } from './buildOnboarding.js'
 
 
@@ -30,6 +30,7 @@ export async function buildOperatorServer() {
       await onboardingRoutes.register(studentRoutes)
       await onboardingRoutes.register(uploadRoutes)
       await onboardingRoutes.register(reportDashboardConfigRoutes)
+      await onboardingRoutes.register(endUserRoutes)
     }, { prefix: '/onboarding' })
   
     return app

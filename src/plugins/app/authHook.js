@@ -11,12 +11,16 @@ const authHook = async (app) => {
 
     try {
       const payload = await req.jwtVerify();   // auto-reads cookie
-      const {userid} = payload
-      // Attach the userId or whole payload to req for all routes
-      const user_details = await getEndUserDetails(userid)
-    
-      if(!user_details){
+      const { userid, tokenVersion } = payload;
+
+      const user_details = await getEndUserDetails(userid);
+
+      if (!user_details) {
         throw new Error("Unauthorized");
+      }
+
+      if (user_details.tokenVersion !== tokenVersion) {
+        throw new Error("Token invalidated");
       }
 
       req['token_info'] = user_details;

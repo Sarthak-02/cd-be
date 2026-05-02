@@ -1,5 +1,12 @@
 import {prisma} from "../prisma/prisma.js"
 
+export async function bulkCreateEndUsers(records) {
+  return prisma.endUser.createMany({
+    data: records,
+    skipDuplicates: true,
+  });
+}
+
 export async function createEndUser(data) {
   try {
     return await prisma.endUser.create({ data });
@@ -70,6 +77,18 @@ export async function updateEndUserByUserid(userid, data) {
     return await prisma.endUser.update({
       where: { userid },
       data,
+    });
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
+export async function incrementTokenVersion(userid) {
+  try {
+    return await prisma.endUser.update({
+      where: { userid },
+      data: { tokenVersion: { increment: 1 } },
     });
   } catch (err) {
     console.log(err);
