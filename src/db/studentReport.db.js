@@ -52,20 +52,7 @@ export async function getStudentReportGradesFlat({
     endDate = null,
     status = "all"
 }) {
-    let grades = await getGradesByStudent({
-        studentId,
-        examId,
-        startDate,
-        endDate
-    });
-
-    if (status === "graded") {
-        grades = grades.filter(isGradeRowGraded);
-    } else if (status === "pending") {
-        grades = grades.filter((g) => !isGradeRowGraded(g));
-    }
-
-    return grades;
+    return getGradesByStudent({ studentId, examId, startDate, endDate, status });
 }
 
 /**
@@ -176,28 +163,31 @@ export async function getStudentReportSummary({
         grades.map((g) => g.examSubject.subjectName)
     );
 
-    const byExam = await Promise.all(
-        examIds.map(async (examId) => {
-            const totalSubjects = await prisma.examSubject.count({
-                where: { examId }
-            });
-            const rows = grades.filter((g) => g.examId === examId);
-            const gradedSubjects = rows.filter(isGradeRowGraded).length;
-            const examMeta = rows[0]?.exam;
-            return {
-                exam_id: examId,
-                exam_type: examMeta?.examType ?? null,
-                exam_status: examMeta?.status ?? null,
-                grade_rows: rows.length,
-                graded_subjects: gradedSubjects,
-                total_subjects_in_exam: totalSubjects,
-                completion_percentage:
-                    totalSubjects > 0
-                        ? Math.round((gradedSubjects / totalSubjects) * 100)
-                        : 0
-            };
-        })
-    );
+    const subjectCountRows = await prisma.examSubject.groupBy({
+        by: ["examId"],
+        where: { examId: { in: examIds } },
+        _count: { id: true }
+    });
+    const subjectCountMap = new Map(subjectCountRows.map((r) => [r.examId, r._count.id]));
+
+    const byExam = examIds.map((examId) => {
+        const totalSubjects = subjectCountMap.get(examId) ?? 0;
+        const rows = grades.filter((g) => g.examId === examId);
+        const gradedSubjects = rows.filter(isGradeRowGraded).length;
+        const examMeta = rows[0]?.exam;
+        return {
+            exam_id: examId,
+            exam_type: examMeta?.examType ?? null,
+            exam_status: examMeta?.status ?? null,
+            grade_rows: rows.length,
+            graded_subjects: gradedSubjects,
+            total_subjects_in_exam: totalSubjects,
+            completion_percentage:
+                totalSubjects > 0
+                    ? Math.round((gradedSubjects / totalSubjects) * 100)
+                    : 0
+        };
+    });
 
     byExam.sort((a, b) =>
         String(a.exam_type || "").localeCompare(String(b.exam_type || ""))

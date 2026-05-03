@@ -126,6 +126,8 @@ export async function getSectionReportGradesFlat({
     };
 
     if (examId) where.examId = examId;
+    if (status === "graded") where.gradesObtained = { not: null };
+    else if (status === "pending") where.gradesObtained = null;
 
     if (startDate || endDate) {
         where.examSubject = { examDate: {} };
@@ -133,7 +135,7 @@ export async function getSectionReportGradesFlat({
         if (endDate) where.examSubject.examDate.lte = new Date(endDate);
     }
 
-    let grades = await prisma.examGrade.findMany({
+    return prisma.examGrade.findMany({
         where,
         include: gradeInclude,
         orderBy: [
@@ -141,14 +143,6 @@ export async function getSectionReportGradesFlat({
             { student: { student_roll_no: "asc" } }
         ]
     });
-
-    if (status === "graded") {
-        grades = grades.filter(isGradeRowGraded);
-    } else if (status === "pending") {
-        grades = grades.filter((g) => !isGradeRowGraded(g));
-    }
-
-    return grades;
 }
 
 /**

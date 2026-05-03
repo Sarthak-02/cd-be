@@ -219,14 +219,15 @@ export async function getGradesByStudent({
     studentId,
     examId = null,
     startDate = null,
-    endDate = null
+    endDate = null,
+    status = "all"
 }) {
     try {
         const whereClause = { studentId };
 
-        if (examId) {
-            whereClause.examId = examId;
-        }
+        if (examId) whereClause.examId = examId;
+        if (status === "graded") whereClause.gradesObtained = { not: null };
+        else if (status === "pending") whereClause.gradesObtained = null;
 
         if (startDate || endDate) {
             whereClause.examSubject = {

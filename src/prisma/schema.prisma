@@ -293,6 +293,7 @@ model Student {
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
+  @@index([student_section_id, student_current_status])
 }
 
 model Parent {
@@ -421,6 +422,8 @@ model Notification {
 
   @@index([status, channel])
   @@index([sourceType, sourceId])
+  @@index([sourceId, status])
+  @@index([receiverId, status])
 }
 
 model BroadcastNotification {
@@ -677,6 +680,7 @@ model ExamGrade {
   @@index([examId])
   @@index([examSubjectId])
   @@index([studentId])
+  @@index([studentId, examId])
 }
 
 enum ChatConversationType {
