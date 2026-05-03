@@ -21,12 +21,12 @@ import {
 
 export async function seed_class_plan_from_master(req, reply) {
   try {
-    const { board, subject, class_name, academic_year, campus_id, teacher_id, is_published = false } = req.body;
+    const { board, subject, section_id, academic_year, campus_id, teacher_id, is_published = false } = req.body;
 
     const result = await seedClassPlanFromMaster({
       board,
       subject,
-      className: class_name,
+      sectionId: section_id,
       academicYear: academic_year,
       campusId: campus_id,
       teacherId: teacher_id,
@@ -73,7 +73,7 @@ export async function create_class_plan(req, reply) {
       master_plan_id,
       campus_id,
       teacher_id,
-      class_name,
+      section_id,
       subject,
       academic_year,
       is_published = false,
@@ -84,7 +84,7 @@ export async function create_class_plan(req, reply) {
       masterPlanId: master_plan_id ?? null,
       campusId: campus_id,
       teacherId: teacher_id,
-      className: class_name,
+      sectionId: section_id,
       subject,
       academicYear: academic_year,
       isPublished: is_published,
@@ -124,7 +124,7 @@ export async function list_class_plans(req, reply) {
     const {
       campus_id,
       teacher_id,
-      class_name,
+      section_id,
       subject,
       academic_year,
       is_published,
@@ -142,7 +142,7 @@ export async function list_class_plans(req, reply) {
     const { rows, total } = await listClassPlans({
       campusId: campus_id,
       teacherId: teacher_id,
-      className: class_name,
+      sectionId: section_id,
       subject,
       academicYear: academic_year,
       isPublished: is_published,
@@ -164,7 +164,7 @@ export async function update_class_plan(req, reply) {
 
     const patch = {};
     if (body.master_plan_id !== undefined) patch.masterPlanId = body.master_plan_id;
-    if (body.class_name !== undefined) patch.className = body.class_name;
+    if (body.section_id !== undefined) patch.sectionId = body.section_id;
     if (body.subject !== undefined) patch.subject = body.subject;
     if (body.academic_year !== undefined) patch.academicYear = body.academic_year;
     if (body.is_published !== undefined) patch.isPublished = body.is_published;

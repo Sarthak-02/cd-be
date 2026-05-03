@@ -8,6 +8,7 @@ import {
   addLessonPlanAttachments,
   removeLessonPlanAttachment,
   getAttachmentLessonPlanId,
+  cloneLessonPlansToSection,
 } from "../../db/lessonPlan.db.js";
 import { generateDocumentUploadSignedUrl } from "../../services/gcsSignedUrl.js";
 
@@ -304,6 +305,41 @@ export async function remove_lesson_plan_attachment(req, reply) {
     reply.code(500).send({
       success: false,
       message: err.message || "Unable to remove attachment",
+    });
+  }
+}
+
+export async function clone_lesson_plans_to_section(req, reply) {
+  try {
+    const { source_section_id, destination_section_id, subject } = req.body;
+
+    if (source_section_id === destination_section_id) {
+      return reply.code(400).send({
+        success: false,
+        message: "Source and destination sections must be different",
+      });
+    }
+
+    const result = await cloneLessonPlansToSection({
+      sourceSectionId: source_section_id,
+      destinationSectionId: destination_section_id,
+      subject,
+    });
+
+    if (!result.ok) {
+      return reply.code(400).send({ success: false, message: result.message });
+    }
+
+    reply.send({
+      success: true,
+      message: `${result.cloned} lesson plan(s) cloned successfully`,
+      data: { cloned_count: result.cloned, plans: result.plans },
+    });
+  } catch (err) {
+    console.error(err);
+    reply.code(500).send({
+      success: false,
+      message: err.message || "Unable to clone lesson plans",
     });
   }
 }

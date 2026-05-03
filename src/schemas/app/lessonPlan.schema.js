@@ -179,6 +179,19 @@ export const LessonPlanRemoveAttachmentSchema = {
   },
 };
 
+export const LessonPlanCloneSchema = {
+  tags: ["Lesson plans"],
+  body: {
+    type: "object",
+    required: ["source_section_id", "destination_section_id", "subject"],
+    properties: {
+      source_section_id: { type: "string" },
+      destination_section_id: { type: "string" },
+      subject: { type: "string", minLength: 1 },
+    },
+  },
+};
+
 export const LessonPlanGenerateUploadUrlSchema = {
   tags: ["Lesson plans"],
   body: {

@@ -304,3 +304,75 @@ export async function getAttachmentLessonPlanId(attachmentId) {
   });
   return row?.lessonPlanId ?? null;
 }
+
+export async function cloneLessonPlansToSection({ sourceSectionId, destinationSectionId, subject }) {
+  const sourceSection = await prisma.section.findUnique({
+    where: { section_id: sourceSectionId },
+    select: { section_id: true },
+  });
+  if (!sourceSection) return { ok: false, message: "Source section not found" };
+
+  const destSection = await prisma.section.findUnique({
+    where: { section_id: destinationSectionId },
+    select: { section_id: true },
+  });
+  if (!destSection) return { ok: false, message: "Destination section not found" };
+
+  const sourcePlans = await prisma.classPlan.findMany({
+    where: { sectionId: sourceSectionId, subject },
+    include: {
+      topics: {
+        orderBy: [{ chapterNumber: "asc" }, { displayOrder: "asc" }],
+        include: {
+          materials: { orderBy: { createdAt: "asc" } },
+          assignments: { orderBy: { createdAt: "asc" } },
+          quizzes: { orderBy: { createdAt: "asc" } },
+        },
+      },
+    },
+  });
+
+  if (sourcePlans.length === 0) {
+    return { ok: true, cloned: 0, plans: [] };
+  }
+
+  const clonedPlans = await prisma.$transaction(
+    sourcePlans.map((plan) => {
+      const { id, createdAt, updatedAt, topics, sectionId, ...rest } = plan;
+      return prisma.classPlan.create({
+        data: {
+          ...rest,
+          sectionId: destinationSectionId,
+          topics: topics.length
+            ? {
+                create: topics.map(({ id: _id, classPlanId: _cpId, createdAt: _ca, updatedAt: _ua, materials, assignments, quizzes, ...topic }) => ({
+                  ...topic,
+                  materials: materials.length
+                    ? { create: materials.map(({ id: _id, topicId: _tid, createdAt: _ca, ...m }) => m) }
+                    : undefined,
+                  assignments: assignments.length
+                    ? { create: assignments.map(({ id: _id, topicId: _tid, createdAt: _ca, updatedAt: _ua, ...a }) => a) }
+                    : undefined,
+                  quizzes: quizzes.length
+                    ? { create: quizzes.map(({ id: _id, topicId: _tid, createdAt: _ca, updatedAt: _ua, ...q }) => q) }
+                    : undefined,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          topics: {
+            orderBy: [{ chapterNumber: "asc" }, { displayOrder: "asc" }],
+            include: {
+              materials: { orderBy: { createdAt: "asc" } },
+              assignments: { orderBy: { createdAt: "asc" } },
+              quizzes: { orderBy: { createdAt: "asc" } },
+            },
+          },
+        },
+      });
+    })
+  );
+
+  return { ok: true, cloned: clonedPlans.length, plans: clonedPlans };
+}

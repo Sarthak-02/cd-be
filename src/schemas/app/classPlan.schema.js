@@ -40,11 +40,11 @@ export const ClassPlanSeedFromMasterSchema = {
   tags: ["Class Plans"],
   body: {
     type: "object",
-    required: ["board", "subject", "class_name", "academic_year", "campus_id", "teacher_id"],
+    required: ["board", "subject", "section_id", "academic_year", "campus_id", "teacher_id"],
     properties: {
       board: { type: "string", minLength: 1, description: "e.g. CBSE, ICSE" },
       subject: { type: "string", minLength: 1 },
-      class_name: { type: "string", minLength: 1, description: "e.g. Class 5, Grade 10" },
+      section_id: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1, description: "e.g. 2025-26" },
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
@@ -59,12 +59,12 @@ export const ClassPlanCreateSchema = {
   tags: ["Class Plans"],
   body: {
     type: "object",
-    required: ["campus_id", "teacher_id", "class_name", "subject", "academic_year"],
+    required: ["campus_id", "teacher_id", "section_id", "subject", "academic_year"],
     properties: {
       master_plan_id: { type: "string", description: "Optional — seed from a MasterLessonPlan" },
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
-      class_name: { type: "string", minLength: 1 },
+      section_id: { type: "string", minLength: 1 },
       subject: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1, description: "e.g. 2025-26" },
       is_published: { type: "boolean", default: false },
@@ -91,7 +91,7 @@ export const ClassPlanListSchema = {
     properties: {
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
-      class_name: { type: "string" },
+      section_id: { type: "string" },
       subject: { type: "string" },
       academic_year: { type: "string" },
       is_published: { type: "boolean" },
@@ -115,7 +115,7 @@ export const ClassPlanUpdateSchema = {
     minProperties: 1,
     properties: {
       master_plan_id: { type: ["string", "null"] },
-      class_name: { type: "string", minLength: 1 },
+      section_id: { type: "string", minLength: 1 },
       subject: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1 },
       is_published: { type: "boolean" },

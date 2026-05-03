@@ -12,9 +12,9 @@ const authHook = async (app) => {
     try {
       const payload = await req.jwtVerify();   // auto-reads cookie
       const { userid, tokenVersion } = payload;
-
+      
       const user_details = await getEndUserDetails(userid);
-
+      
       if (!user_details) {
         throw new Error("Unauthorized");
       }

@@ -35,14 +35,14 @@ const classPlanInclude = {
 export async function seedClassPlanFromMaster({
   board,
   subject,
-  className,
+  sectionId,
   academicYear,
   campusId,
   teacherId,
   isPublished = false,
 }) {
   const masterPlan = await prisma.masterLessonPlan.findUnique({
-    where: { className_subject_board_academicYear: { className, subject, board, academicYear } },
+    where: { className_subject_board_academicYear: { className: sectionId, subject, board, academicYear } },
   });
 
   if (!masterPlan) return { ok: false, message: "No master lesson plan found for the given board, subject, class, and academic year" };
@@ -70,7 +70,7 @@ export async function seedClassPlanFromMaster({
       masterPlanId: masterPlan.id,
       campusId,
       teacherId,
-      className,
+      sectionId,
       subject,
       academicYear,
       isPublished,
@@ -88,7 +88,7 @@ export async function createClassPlan({
   masterPlanId,
   campusId,
   teacherId,
-  className,
+  sectionId,
   subject,
   academicYear,
   isPublished = false,
@@ -99,7 +99,7 @@ export async function createClassPlan({
       masterPlanId: masterPlanId ?? null,
       campusId,
       teacherId,
-      className,
+      sectionId,
       subject,
       academicYear,
       isPublished,
@@ -116,7 +116,7 @@ export async function getClassPlanById(id) {
 export async function listClassPlans({
   campusId,
   teacherId,
-  className,
+  sectionId,
   subject,
   academicYear,
   isPublished,
@@ -126,7 +126,7 @@ export async function listClassPlans({
   const where = {};
   if (campusId) where.campusId = campusId;
   if (teacherId) where.teacherId = teacherId;
-  if (className) where.className = className;
+  if (sectionId) where.sectionId = sectionId;
   if (subject) where.subject = subject;
   if (academicYear) where.academicYear = academicYear;
   if (isPublished !== undefined) where.isPublished = isPublished;
@@ -135,7 +135,7 @@ export async function listClassPlans({
     prisma.classPlan.findMany({
       where,
       include: classPlanInclude,
-      orderBy: [{ academicYear: "desc" }, { className: "asc" }, { subject: "asc" }],
+      orderBy: [{ academicYear: "desc" }, { sectionId: "asc" }, { subject: "asc" }],
       take: limit,
       skip: offset,
     }),
@@ -148,7 +148,7 @@ export async function listClassPlans({
 export async function updateClassPlan(id, patch) {
   const data = {};
   if (patch.masterPlanId !== undefined) data.masterPlanId = patch.masterPlanId;
-  if (patch.className !== undefined) data.className = patch.className;
+  if (patch.sectionId !== undefined) data.sectionId = patch.sectionId;
   if (patch.subject !== undefined) data.subject = patch.subject;
   if (patch.academicYear !== undefined) data.academicYear = patch.academicYear;
   if (patch.isPublished !== undefined) data.isPublished = patch.isPublished;

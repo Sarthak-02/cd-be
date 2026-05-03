@@ -7,6 +7,7 @@ import {
   add_lesson_plan_attachments,
   remove_lesson_plan_attachment,
   generate_lesson_plan_attachment_upload_url,
+  clone_lesson_plans_to_section,
 } from "../../controllers/app/lessonPlan.controller.js";
 import {
   LessonPlanCreateSchema,
@@ -17,6 +18,7 @@ import {
   LessonPlanAddAttachmentsSchema,
   LessonPlanRemoveAttachmentSchema,
   LessonPlanGenerateUploadUrlSchema,
+  LessonPlanCloneSchema,
 } from "../../schemas/app/lessonPlan.schema.js";
 
 const createOpts = {
@@ -57,6 +59,10 @@ const uploadUrlOpts = {
   schema: { body: LessonPlanGenerateUploadUrlSchema.body },
 };
 
+const cloneOpts = {
+  schema: { body: LessonPlanCloneSchema.body },
+};
+
 async function lessonPlanRoutes(app) {
   app.post(
     "/lesson-plans/attachment/upload-url",
@@ -66,6 +72,7 @@ async function lessonPlanRoutes(app) {
 
   app.get("/lesson-plans", listOpts, list_lesson_plans);
   app.post("/lesson-plans", createOpts, create_lesson_plan);
+  app.post("/lesson-plans/clone", cloneOpts, clone_lesson_plans_to_section);
 
   app.delete(
     "/lesson-plans/attachments/:attachment_id",

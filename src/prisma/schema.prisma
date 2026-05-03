@@ -822,7 +822,7 @@ model ClassPlan {
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
 
-  className    String
+  sectionId    String
   subject      String
   academicYear String
   isPublished  Boolean @default(false)
@@ -832,7 +832,7 @@ model ClassPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([teacherId, campusId, className, subject, academicYear])
+  @@unique([teacherId, campusId, sectionId, subject, academicYear])
   @@index([campusId, academicYear])
   @@index([teacherId])
 }
