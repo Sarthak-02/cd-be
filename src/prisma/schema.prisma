@@ -233,6 +233,7 @@ model Class {
 
   sections Section[]
   lessonPlans LessonPlan[]
+  classPlans  ClassPlan[]
 
   @@index([campus_id])
 }
@@ -254,6 +255,7 @@ model Section {
   attendanceSessions AttendanceSession[]
   students           Student[]
   lessonPlans        LessonPlan[]
+  topicProgress      ClassPlanTopicProgress[]
 
   @@index([class_id])
 }
@@ -826,7 +828,9 @@ model ClassPlan {
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
 
-  sectionId    String
+  classId String
+  classRef Class @relation(fields: [classId], references: [class_id])
+
   subject      String
   academicYear String
   isPublished  Boolean @default(false)
@@ -836,7 +840,7 @@ model ClassPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([teacherId, campusId, sectionId, subject, academicYear])
+  @@unique([teacherId, campusId, classId, subject, academicYear])
   @@index([campusId, academicYear])
   @@index([teacherId])
 }
@@ -846,10 +850,27 @@ model ClassPlanTopic {
   classPlanId String
   classPlan   ClassPlan @relation(fields: [classPlanId], references: [id], onDelete: Cascade)
 
-  chapterTitle       String
-  chapterNumber      Int?
-  title              String
-  displayOrder       Float
+  chapterTitle  String
+  chapterNumber Int?
+  title         String
+  displayOrder  Float
+
+  progress ClassPlanTopicProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([classPlanId, chapterNumber, displayOrder])
+}
+
+model ClassPlanTopicProgress {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [section_id])
+
   status             ClassPlanTopicStatus @default(PENDING)
   scheduledDate      DateTime?            @db.Date
   completedOn        DateTime?            @db.Date
@@ -864,50 +885,52 @@ model ClassPlanTopic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([classPlanId, chapterNumber, displayOrder])
+  @@unique([topicId, sectionId])
+  @@index([topicId])
+  @@index([sectionId])
 }
 
 model TopicMaterial {
-  id           String         @id @default(uuid())
-  topicId      String
-  topic        ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
-  fileName   String
-  fileUrl    String
+  fileName  String
+  fileUrl   String
 
   createdAt DateTime @default(now())
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model TopicAssignment {
-  id      String         @id @default(uuid())
-  topicId String
-  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
   title   String
-  dueDate DateTime?              @db.Date
+  dueDate DateTime?             @db.Date
   fileUrl String?
-  status  TopicAssignmentStatus  @default(DRAFT)
+  status  TopicAssignmentStatus @default(DRAFT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model TopicQuiz {
-  id      String         @id @default(uuid())
-  topicId String
-  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
-  title          String
-  generatedByAi  Boolean @default(false)
-  fileUrl        String?
+  title         String
+  generatedByAi Boolean @default(false)
+  fileUrl       String?
 
   createdAt DateTime @default(now())
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model Scholarship {

@@ -8,6 +8,9 @@ import {
   add_class_plan_topics,
   update_class_plan_topic,
   delete_class_plan_topic,
+  create_topic_progress,
+  update_topic_progress,
+  delete_topic_progress,
   add_topic_material,
   delete_topic_material,
   add_topic_assignment,
@@ -27,6 +30,9 @@ import {
   ClassPlanAddTopicsSchema,
   ClassPlanTopicUpdateSchema,
   ClassPlanTopicDeleteSchema,
+  ClassPlanTopicProgressCreateSchema,
+  ClassPlanTopicProgressUpdateSchema,
+  ClassPlanTopicProgressDeleteSchema,
   TopicMaterialAddSchema,
   TopicMaterialDeleteSchema,
   TopicAssignmentAddSchema,
@@ -60,7 +66,7 @@ async function classPlanRoutes(app) {
 
   app.get(
     "/class-plans/:class_plan_id",
-    { schema: { params: ClassPlanGetByIdSchema.params } },
+    { schema: { params: ClassPlanGetByIdSchema.params, querystring: ClassPlanGetByIdSchema.querystring } },
     get_class_plan_by_id
   );
 
@@ -95,9 +101,28 @@ async function classPlanRoutes(app) {
     delete_class_plan_topic
   );
 
+  // ── Topic Progress ─────────────────────────────────────────────────────────
+  app.post(
+    "/class-plan-topics/:topic_id/progress",
+    { schema: { params: ClassPlanTopicProgressCreateSchema.params, body: ClassPlanTopicProgressCreateSchema.body } },
+    create_topic_progress
+  );
+
+  app.patch(
+    "/class-plan-topic-progress/:progress_id",
+    { schema: { params: ClassPlanTopicProgressUpdateSchema.params, body: ClassPlanTopicProgressUpdateSchema.body } },
+    update_topic_progress
+  );
+
+  app.delete(
+    "/class-plan-topic-progress/:progress_id",
+    { schema: { params: ClassPlanTopicProgressDeleteSchema.params } },
+    delete_topic_progress
+  );
+
   // ── Materials ──────────────────────────────────────────────────────────────
   app.post(
-    "/class-plan-topics/:topic_id/materials",
+    "/class-plan-topic-progress/:progress_id/materials",
     { schema: { params: TopicMaterialAddSchema.params, body: TopicMaterialAddSchema.body } },
     add_topic_material
   );
@@ -110,7 +135,7 @@ async function classPlanRoutes(app) {
 
   // ── Assignments ────────────────────────────────────────────────────────────
   app.post(
-    "/class-plan-topics/:topic_id/assignments",
+    "/class-plan-topic-progress/:progress_id/assignments",
     { schema: { params: TopicAssignmentAddSchema.params, body: TopicAssignmentAddSchema.body } },
     add_topic_assignment
   );
@@ -129,7 +154,7 @@ async function classPlanRoutes(app) {
 
   // ── Quizzes ────────────────────────────────────────────────────────────────
   app.post(
-    "/class-plan-topics/:topic_id/quizzes",
+    "/class-plan-topic-progress/:progress_id/quizzes",
     { schema: { params: TopicQuizAddSchema.params, body: TopicQuizAddSchema.body } },
     add_topic_quiz
   );
