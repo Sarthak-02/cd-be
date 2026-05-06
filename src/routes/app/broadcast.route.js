@@ -1,18 +1,20 @@
-import { 
+import {
     broadcast_post,
     broadcast_get_received,
     broadcast_get_sent,
     broadcast_get_by_id,
     broadcast_get_all,
-    broadcast_update
+    broadcast_update,
+    generate_broadcast_attachment_upload_url
 } from "../../controllers/app/broadcast.controller.js";
-import { 
+import {
     BroadcastCreateRequestSchema,
     BroadcastGetReceivedSchema,
     BroadcastGetSentSchema,
     BroadcastGetByIdSchema,
     BroadcastGetAllSchema,
-    BroadcastUpdateSchema
+    BroadcastUpdateSchema,
+    BroadcastAttachmentUploadUrlSchema
 } from "../../schemas/app/broadcast.schema.js"
 
 const broadcastCreateOpts = {
@@ -52,7 +54,14 @@ const broadcastUpdateOpts = {
     }
 };
 
+const broadcastAttachmentUploadUrlOpts = {
+    schema: {
+        body: BroadcastAttachmentUploadUrlSchema.body
+    }
+};
+
 export async function broadcastRouter(app,options) {
+    app.post("/broadcast/attachment/upload-url", broadcastAttachmentUploadUrlOpts, generate_broadcast_attachment_upload_url)
     app.post("/broadcast", broadcastCreateOpts, broadcast_post)
     app.get("/broadcast/list", broadcastGetAllOpts, broadcast_get_all)
     app.get("/broadcast/received", broadcastGetReceivedOpts, broadcast_get_received)

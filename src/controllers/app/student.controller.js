@@ -13,10 +13,6 @@ export async function students_by_section_get(req, reply) {
 
     const students = await getActiveStudentsBySection(section_id);
 
-    if (students === null) {
-      throw new Error("Failed to fetch students");
-    }
-
     // Format the response with full name
     const formattedStudents = students.map(student => ({
       student_id: student.student_id,

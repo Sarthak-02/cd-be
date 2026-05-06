@@ -1,5 +1,5 @@
-import { 
-  createBroadcastDraft, 
+import {
+  createBroadcastDraft,
   sendBroadcast,
   getBroadcastsByReceiverId,
   getBroadcastsByCreatedBy,
@@ -7,12 +7,14 @@ import {
   getAllBroadcasts,
   updateBroadcast
 } from "../../services/app/broadcast.service.js";
+import { generateDocumentUploadSignedUrl } from "../../services/gcsSignedUrl.js";
 
 export async function broadcast_post(req, reply) {
   try {
     const {
       title,
       message,
+      category,
       attachmentUrls,
       targets,
       campusId,
@@ -22,6 +24,7 @@ export async function broadcast_post(req, reply) {
     const broadcast = await createBroadcastDraft({
       title,
       message,
+      category,
       attachmentUrls,
       createdBy: userId,
       campusId,
@@ -117,6 +120,7 @@ export async function broadcast_get_all(req, reply) {
       campusId, 
       status, 
       createdBy,
+      category,
       sourceType,
       limit = 100, 
       offset = 0 
@@ -126,6 +130,7 @@ export async function broadcast_get_all(req, reply) {
       campusId,
       status,
       createdBy,
+      category,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -145,11 +150,79 @@ export async function broadcast_get_all(req, reply) {
   }
 }
 
+export async function generate_broadcast_attachment_upload_url(req, reply) {
+  try {
+    let { broadcast_id, file_name, mime_type, campus_id } = req.body;
+
+    if (!file_name || !mime_type) {
+      return reply.code(400).send({
+        success: false,
+        message: "file_name and mime_type are required",
+      });
+    }
+
+    if (!broadcast_id) {
+      broadcast_id = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/svg+xml",
+      "image/tiff",
+      "image/bmp",
+      "image/ico",
+    ];
+
+    if (!allowedMimeTypes.includes(mime_type)) {
+      return reply.code(400).send({
+        success: false,
+        message: "Invalid file type. Only PDF, Word, Excel, PowerPoint, text files, and images are allowed.",
+      });
+    }
+
+    const result = await generateDocumentUploadSignedUrl({
+      entity: "broadcast",
+      entityId: broadcast_id,
+      fileName: file_name,
+      mimeType: mime_type,
+      campus_id: campus_id,
+    });
+
+    return reply.code(200).send({
+      success: true,
+      message: "Signed URL generated successfully",
+      data: {
+        broadcastId: broadcast_id,
+        uploadUrl: result.uploadUrl,
+        publicUrl: result.publicUrl,
+        objectPath: result.objectPath,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    return reply.code(500).send({
+      success: false,
+      message: err.message || "Unable to generate upload URL",
+    });
+  }
+}
+
 // Update broadcast (only for DRAFT status)
 export async function broadcast_update(req, reply) {
   try {
     const { id } = req.params;
-    const { title, message, attachmentUrls, targets } = req.body;
+    const { title, message, category, attachmentUrls, targets } = req.body;
 
     if (!id) {
       return reply.code(400).send({ error: "id is required" });
@@ -158,6 +231,7 @@ export async function broadcast_update(req, reply) {
     const updatedBroadcast = await updateBroadcast(id, {
       title,
       message,
+      category,
       attachmentUrls,
       targets,
     });

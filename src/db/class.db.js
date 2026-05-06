@@ -1,55 +1,37 @@
-import {prisma} from "../prisma/prisma.js"
+import { prisma } from "../prisma/prisma.js";
 
 export async function createClass(data) {
-  try {
-    const createdClass = await prisma.class.create({ data });
-    return createdClass;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
+  return prisma.class.create({ data });
 }
 
 export async function getClass(class_id) {
-  try {
-    return await prisma.class.findUnique({
-      where: { class_id }
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+  return prisma.class.findUnique({
+    where: { class_id },
+  });
 }
 
-export async function getAllClasses(omit={},filter={}) {
-  try {
-    return await prisma.class.findMany({omit , where :filter});
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+export async function getAllClasses({ omit = {}, where = {} } = {}) {
+  return prisma.class.findMany({ omit, where });
 }
 
 export async function updateClass(data) {
-  try {
-    return await prisma.class.update({
-      where: { class_id: data.class_id },
-      data,
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
+  const { class_id, ...rest } = data;
+  const updates = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== undefined),
+  );
+  if (Object.keys(updates).length === 0) {
+    const err = new Error("NO_FIELDS_TO_UPDATE");
+    err.code = "NO_FIELDS_TO_UPDATE";
+    throw err;
   }
+  return prisma.class.update({
+    where: { class_id },
+    data: updates,
+  });
 }
 
 export async function deleteClass(class_id) {
-  try {
-    await prisma.class.delete({
-      where: { class_id },
-    });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  await prisma.class.delete({
+    where: { class_id },
+  });
 }

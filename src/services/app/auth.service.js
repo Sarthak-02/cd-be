@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { getEndUserByUsername } from "../../db/enduser.db.js";
+import { getEndUserByUsername, updateEndUserByUserid } from "../../db/enduser.db.js";
 import { getStudent } from "../../db/student.db.js";
 import { getTeacher } from "../../db/teacher.db.js";
 import { getSectionsByIds } from "../../db/section.db.js";
@@ -32,6 +32,9 @@ export async function loginEndUser({ username, password }) {
     throw err;
   }
 
+  const previousLastLoginAt = user.lastLoginAt;
+  await updateEndUserByUserid(user.userid, { lastLoginAt: new Date() });
+
   let details = null;
   let sections = null;
   let campus = null;
@@ -49,6 +52,7 @@ export async function loginEndUser({ username, password }) {
         campus_exam_types: details.campus.extras?.campus_exam_types || null,
         class_grading_config: details.campus.extras?.class_grading_config || null,
         attendance_slots: details.campus.extras?.attendance_slots || null,
+        academic_calendar : details.campus.extras?.academic_calendar
       };
       // Remove campus from details to avoid duplication
       delete details.campus;
@@ -63,7 +67,9 @@ export async function loginEndUser({ username, password }) {
         campus_id: details.campus.campus_id,
         campus_name: details.campus.campus_name,
         term_start_date: details.campus.extras?.term_start_date || null,
-        term_end_date: details.campus.extras?.term_end_date || null
+        term_end_date: details.campus.extras?.term_end_date || null,
+        academic_calendar : details.campus.extras?.academic_calendar
+        
       };
       // Remove campus from details to avoid duplication
       delete details.campus;
@@ -87,6 +93,8 @@ export async function loginEndUser({ username, password }) {
   
   const safeUser = {
     ...user,
+    lastLoginAt: previousLastLoginAt,
+    isFirstLogin: previousLastLoginAt === null,
     details,
     campus
   };
@@ -96,7 +104,8 @@ export async function loginEndUser({ username, password }) {
   const token = {
     userid: user.userid,
     username: user.username,
-    role: user.role
+    role: user.role,
+    tokenVersion: user.tokenVersion,
   };
 
   return { token, user: safeUser };

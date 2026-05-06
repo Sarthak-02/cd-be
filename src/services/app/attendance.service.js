@@ -88,43 +88,43 @@ export async function bulkCreateAttendance({
         tx // pass transaction client
       );
       
-      console.log("attendanceSession", attendanceSession,date);
-      // 2️⃣ Validate input
       if (!attendanceSession || !records?.length) {
         throw new Error("Invalid bulk attendance input");
       }
-  
-      const attendanceSessionId = attendanceSession.id;
-  
-      // 3️⃣ Load session + enforce rules (inside txn)
-      const session = await tx.attendanceSession.findUnique({
-        where: { id: attendanceSessionId },
-        select: {
-          status: true,
-          teacherId: true,
-        },
-      });
-  
-      if (!session) {
-        throw new Error("Attendance session not found");
-      }
-  
-      // 4️⃣ Business rules
-      if (session.status !== "DRAFT") {
+
+      if (attendanceSession.status !== "DRAFT") {
         throw new Error("Bulk create allowed only in DRAFT sessions");
       }
-  
-      // 5️⃣ Perform bulk upsert (inside txn)
+
       return await bulkUpsertAttendanceRecords(
         {
-          attendanceSessionId,
+          attendanceSessionId: attendanceSession.id,
           records,
           updatedBy: teacher_id,
         },
-        tx // pass transaction client
+        tx
       );
     });
   }
+
+export async function editAttendance({ session_id, teacher_id, records }) {
+    return await prisma.$transaction(async (tx) => {
+        const session = await tx.attendanceSession.findUnique({
+            where: { id: session_id },
+            select: { status: true },
+        });
+
+        if (!session) throw new Error("Attendance session not found");
+        if (session.status === "LOCKED") throw new Error("Cannot edit a locked attendance session");
+
+        await bulkUpsertAttendanceRecords(
+            { attendanceSessionId: session_id, records, updatedBy: teacher_id },
+            tx
+        );
+
+        return session_id;
+    });
+}
 
 /**
  * Get today's schedule entries for a section

@@ -1,69 +1,54 @@
-import {prisma} from "../prisma/prisma.js"
+import { prisma } from "../prisma/prisma.js";
+
+function normalizeSchoolIds(ids) {
+  if (!Array.isArray(ids)) return [];
+  return ids
+    .map((p) =>
+      p && typeof p === "object" && "value" in p ? p.value : p,
+    )
+    .filter((id) => id != null && id !== "");
+}
 
 export async function createSchool(data) {
-  try {
-    await prisma.school.create({ data });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  return prisma.school.create({ data });
 }
 
 export async function getSchool(school_id) {
-  try {
-    return await prisma.school.findUnique({
-      where: { school_id }
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+  return prisma.school.findUnique({
+    where: { school_id },
+  });
 }
 
 export async function getSchools(all_school_id) {
-  try {
-    return await prisma.school.findMany({
-      where: {
-        school_id: { in: all_school_id }
-      }
-    });
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
+  const ids = normalizeSchoolIds(all_school_id);
+  if (ids.length === 0) return [];
+  return prisma.school.findMany({
+    where: { school_id: { in: ids } },
+  });
 }
 
-
-export async function getAllSchools(omit={}) {
-  try {
-    return await prisma.school.findMany({omit});
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+export async function getAllSchools({ omit = {} } = {}) {
+  return prisma.school.findMany({ omit });
 }
 
 export async function updateSchool(data) {
-  try {
-    return await prisma.school.update({
-      where: { school_id: data.school_id },
-      data,
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
+  const { school_id, ...rest } = data;
+  const updates = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== undefined),
+  );
+  if (Object.keys(updates).length === 0) {
+    const err = new Error("NO_FIELDS_TO_UPDATE");
+    err.code = "NO_FIELDS_TO_UPDATE";
+    throw err;
   }
+  return prisma.school.update({
+    where: { school_id },
+    data: updates,
+  });
 }
 
 export async function deleteSchool(school_id) {
-  try {
-    await prisma.school.delete({
-      where: { school_id },
-    });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  await prisma.school.delete({
+    where: { school_id },
+  });
 }

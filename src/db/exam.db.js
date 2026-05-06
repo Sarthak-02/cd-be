@@ -104,27 +104,21 @@ export async function getExamById(examId) {
             return null;
         }
 
-        // For each subject, check if grades have been marked
-        const subjectsWithGradeInfo = await Promise.all(
-            exam.subjects.map(async (subject) => {
-                // Check if any grades exist for this subject
-                const gradeCount = await prisma.examGrade.count({
-                    where: {
-                        examSubjectId: subject.id
-                    }
-                });
-
-                return {
-                    ...subject,
-                    hasGradesMarked: gradeCount > 0,
-                    totalGradesMarked: gradeCount
-                };
-            })
-        );
+        const subjectIds = exam.subjects.map(s => s.id);
+        const gradeCounts = await prisma.examGrade.groupBy({
+            by: ['examSubjectId'],
+            where: { examSubjectId: { in: subjectIds } },
+            _count: { examSubjectId: true },
+        });
+        const gradeCountMap = new Map(gradeCounts.map(g => [g.examSubjectId, g._count.examSubjectId]));
 
         return {
             ...exam,
-            subjects: subjectsWithGradeInfo
+            subjects: exam.subjects.map(subject => ({
+                ...subject,
+                hasGradesMarked: (gradeCountMap.get(subject.id) ?? 0) > 0,
+                totalGradesMarked: gradeCountMap.get(subject.id) ?? 0,
+            })),
         };
     } catch (err) {
         console.error("Error fetching exam by ID:", err);

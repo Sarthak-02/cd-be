@@ -1,4 +1,4 @@
-import { bulkCreateAttendance, getTodayEntries } from "../../services/app/attendance.service.js";
+import { bulkCreateAttendance, editAttendance, getTodayEntries } from "../../services/app/attendance.service.js";
 import { finalizeAttendanceAndNotify } from "../../services/app/attendanceFinalize.service.js";
 import { getAttendanceDetailsBySection, getStudentAttendanceBySection } from "../../db/attendance.db.js";
 import { getActiveStudentsBySection } from "../../db/student.db.js";
@@ -28,6 +28,20 @@ export async function bulk_create_attendance_post(req, reply) {
     }
   }
 
+
+export async function edit_attendance_patch(req, reply) {
+    try {
+        const { session_id, teacher_id, records } = req.body;
+
+        await editAttendance({ session_id, teacher_id, records });
+
+        reply.send({ success: true, message: "Attendance updated successfully" });
+    } catch (err) {
+        console.log(err);
+        const isLocked = err.message?.includes("locked");
+        reply.code(isLocked ? 403 : 400).send({ success: false, message: err.message || "Unable to update attendance" });
+    }
+}
 
 export function checkToday(date) {
     if (!date) return false;
@@ -71,10 +85,6 @@ export async function get_attendance_details(req, reply) {
         // If no attendance records found and date is today, return student details
         if ((!attendanceDetails || attendanceDetails.length === 0) && isToday) {
             const students = await getActiveStudentsBySection(section_id);
-
-            if (students === null) {
-                throw new Error("Failed to fetch students");
-            }
 
             // Format the response similar to students_by_section_get
             const formattedStudents = students.map(student => ({

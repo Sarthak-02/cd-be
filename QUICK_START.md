@@ -111,7 +111,7 @@ And update your DATABASE_URL format for Cloud SQL connection.
 
 | Setting | Value | Description |
 |---------|-------|-------------|
-| Runtime | nodejs20 | Node.js 20 runtime |
+| Runtime | nodejs22 | Node.js 22 runtime |
 | Instance Class | F2 | 512MB RAM, 1.2GHz CPU |
 | Min Idle Instances | 0 | Scales to zero when not in use |
 | Max Idle Instances | 1 | Maximum idle instances |

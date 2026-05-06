@@ -1,4 +1,6 @@
 import { prisma } from "../prisma/prisma.js";
+import { Prisma } from "../prisma/generated/index.js";
+import { randomUUID } from "crypto";
 
 /**
  * Create or update a single exam grade
@@ -66,36 +68,49 @@ export async function upsertExamGrade({
  * Bulk create or update exam grades
  */
 export async function bulkUpsertExamGrades(grades) {
+    if (!grades?.length) return [];
     try {
-        const results = await prisma.$transaction(
-            grades.map(grade => 
-                prisma.examGrade.upsert({
-                    where: {
-                        examSubjectId_studentId: {
-                            examSubjectId: grade.examSubjectId,
-                            studentId: grade.studentId
-                        }
-                    },
-                    update: {
-                        gradesObtained: grade.gradesObtained,
-                        remarks: grade.remarks,
-                        gradedBy: grade.gradedBy,
-                        gradedAt: new Date()
-                    },
-                    create: {
-                        examId: grade.examId,
-                        examSubjectId: grade.examSubjectId,
-                        studentId: grade.studentId,
-                        gradesObtained: grade.gradesObtained,
-                        remarks: grade.remarks,
-                        gradedBy: grade.gradedBy,
-                        gradedAt: new Date()
-                    }
-                })
-            )
+        const now = new Date();
+        const values = grades.map(grade =>
+            Prisma.sql`(
+                ${randomUUID()}, ${grade.examId}, ${grade.examSubjectId}, ${grade.studentId},
+                ${grade.gradesObtained ?? null}, ${grade.remarks ?? null}, ${grade.gradedBy ?? null},
+                ${now}, ${now}, ${now}
+            )`
         );
 
-        return results;
+        const inserted = await prisma.$queryRaw`
+            INSERT INTO "ExamGrade" (id, "examId", "examSubjectId", "studentId", "gradesObtained", remarks, "gradedBy", "gradedAt", "createdAt", "updatedAt")
+            VALUES ${Prisma.join(values)}
+            ON CONFLICT ("examSubjectId", "studentId")
+            DO UPDATE SET
+                "gradesObtained" = EXCLUDED."gradesObtained",
+                remarks = EXCLUDED.remarks,
+                "gradedBy" = EXCLUDED."gradedBy",
+                "gradedAt" = EXCLUDED."gradedAt",
+                "updatedAt" = EXCLUDED."updatedAt"
+            RETURNING id
+        `;
+
+        const ids = inserted.map(r => r.id);
+        return await prisma.examGrade.findMany({
+            where: { id: { in: ids } },
+            include: {
+                student: {
+                    select: {
+                        student_id: true,
+                        student_first_name: true,
+                        student_middle_name: true,
+                        student_last_name: true,
+                        student_admission_no: true,
+                        student_roll_no: true
+                    }
+                },
+                examSubject: {
+                    select: { id: true, subjectName: true, examDate: true }
+                }
+            }
+        });
     } catch (err) {
         console.error("Error bulk upserting exam grades:", err);
         throw err;
@@ -204,14 +219,15 @@ export async function getGradesByStudent({
     studentId,
     examId = null,
     startDate = null,
-    endDate = null
+    endDate = null,
+    status = "all"
 }) {
     try {
         const whereClause = { studentId };
 
-        if (examId) {
-            whereClause.examId = examId;
-        }
+        if (examId) whereClause.examId = examId;
+        if (status === "graded") whereClause.gradesObtained = { not: null };
+        else if (status === "pending") whereClause.gradesObtained = null;
 
         if (startDate || endDate) {
             whereClause.examSubject = {

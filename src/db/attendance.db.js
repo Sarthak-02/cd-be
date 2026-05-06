@@ -1,34 +1,28 @@
 import { prisma } from "../prisma/prisma.js"
+import { Prisma } from "../prisma/generated/index.js"
+import { randomUUID } from "crypto"
 
 export async function bulkUpsertAttendanceRecords({
     attendanceSessionId,
     records, // [{ studentId, status }]
     updatedBy
   },tx=prisma) {
+    if (!records?.length) return attendanceSessionId;
     try {
-      await Promise.all(
-        records.map(({ student_id, status }) =>
-          tx.attendanceRecord.upsert({
-            where: {
-              attendanceSessionId_studentId: {
-                attendanceSessionId,
-                studentId:student_id,
-              },
-            },
-            update: {
-              status,
-              updatedBy,
-            },
-            create: {
-              attendanceSessionId,
-              studentId:student_id,
-              status
-            },
-          })
-        )
+      const now = new Date();
+      const values = records.map(({ student_id, status }) =>
+        Prisma.sql`(${randomUUID()}, ${attendanceSessionId}, ${student_id}, ${status}::"AttendanceStatus", ${now}, ${now}, ${updatedBy ?? null})`
       );
-
-      return attendanceSessionId
+      await tx.$executeRaw`
+        INSERT INTO "AttendanceRecord" (id, "attendanceSessionId", "studentId", status, "createdAt", "updatedAt", "updatedBy")
+        VALUES ${Prisma.join(values)}
+        ON CONFLICT ("attendanceSessionId", "studentId")
+        DO UPDATE SET
+          status = EXCLUDED.status,
+          "updatedBy" = EXCLUDED."updatedBy",
+          "updatedAt" = EXCLUDED."updatedAt"
+      `;
+      return attendanceSessionId;
     } catch (err) {
       console.error(err);
       return null;

@@ -94,6 +94,40 @@ enum HomeworkStatus {
   CLOSED
 }
 
+enum PickupRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  EXPIRED
+}
+
+enum PickupSource {
+  AUTHORIZED_PERSON
+  ONE_TIME_REQUEST
+  MANUAL
+}
+
+enum LessonPlanStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+  PARTIALLY_COMPLETED
+}
+
+enum ClassPlanTopicStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+enum TopicAssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
 enum SubmissionStatus {
   PENDING
   SUBMITTED
@@ -136,6 +170,8 @@ model EndUser {
 
   role           EndUserRole // STUDENT | TEACHER | ADMIN | PARENT
   isActive       Boolean  @default(true)
+  lastLoginAt    DateTime?
+  tokenVersion   Int      @default(0)
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -169,6 +205,8 @@ model Campus {
   classes  Class[]
   students Student[]
   teachers Teacher[]
+  lessonPlans LessonPlan[]
+  classPlans  ClassPlan[]
 
   @@index([school_id])
 }
@@ -194,6 +232,7 @@ model Class {
   updatedAt DateTime @updatedAt
 
   sections Section[]
+  lessonPlans LessonPlan[]
 
   @@index([campus_id])
 }
@@ -214,6 +253,7 @@ model Section {
 
   attendanceSessions AttendanceSession[]
   students           Student[]
+  lessonPlans        LessonPlan[]
 
   @@index([class_id])
 }
@@ -246,10 +286,14 @@ model Student {
   parents             Parent[]
   homeworkSubmissions HomeworkSubmission[]
   examGrades          ExamGrade[]
+  authorizedPickupPersons AuthorizedPickupPerson[]
+  pickupRequests          PickupRequest[]
+  pickupLogs              PickupLog[]
   
   @@unique([campus_id, student_admission_no])
   @@index([campus_id])
   @@index([student_current_status])
+  @@index([student_section_id, student_current_status])
 }
 
 model Parent {
@@ -294,6 +338,9 @@ model Teacher {
   updatedAttendance  AttendanceRecord[]  @relation("AttendanceUpdatedBy")
   homework           Homework[]
   gradedSubmissions  HomeworkSubmission[] @relation("HomeworkGradedBy")
+  lessonPlans        LessonPlan[]
+  classPlans         ClassPlan[]
+  pickupLogs         PickupLog[]
 
   @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
@@ -375,12 +422,15 @@ model Notification {
 
   @@index([status, channel])
   @@index([sourceType, sourceId])
+  @@index([sourceId, status])
+  @@index([receiverId, status])
 }
 
 model BroadcastNotification {
   id        String          @id @default(uuid())
   title     String
   message   String
+  category  String @default("general")
   createdBy String // teacher/admin
   campusId  String
   status    BroadcastStatus // DRAFT | NOTIFYING | SUBMITTED
@@ -630,6 +680,12 @@ model ExamGrade {
   @@index([examId])
   @@index([examSubjectId])
   @@index([studentId])
+  @@index([studentId, examId])
+}
+
+enum ChatConversationType {
+  DIRECT
+  GROUP
 }
 
 enum ScholarshipStatus {
@@ -637,6 +693,221 @@ enum ScholarshipStatus {
   CLOSED
   EXTENDED
   UPCOMING
+}
+
+model ChatConversation {
+  id        String               @id @default(uuid())
+  type      ChatConversationType
+  title     String?
+  campusId  String?
+  /// For DIRECT chats: sorted `userIdA:userIdB` so the pair is unique
+  directKey String?              @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+
+  @@index([campusId])
+  @@index([updatedAt])
+}
+
+model ChatParticipant {
+  id             String @id @default(uuid())
+  conversationId String
+  userId         String
+  userRole       EndUserRole
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id             String @id @default(uuid())
+  conversationId String
+  senderUserId   String
+  body           String @db.Text
+
+  createdAt DateTime @default(now())
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model LessonPlan {
+  id String @id @default(uuid())
+
+  lessonDate          DateTime         @db.Date
+  chapterTopic        String
+  description         String?          @db.Text
+  /// JSON array of strings, e.g. ["Understand X", "Apply Y"]
+  learningObjectives  Json
+  /// JSON array of { type, description?, duration_minutes? }
+  activities          Json
+  homework            String?          @db.Text
+  status              LessonPlanStatus @default(PLANNED)
+
+  subject String
+
+  classId String
+  classRef Class @relation(fields: [classId], references: [class_id])
+
+  sectionId String?
+  section   Section? @relation(fields: [sectionId], references: [section_id])
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
+
+  campusId String
+  campus   Campus @relation(fields: [campusId], references: [campus_id])
+
+  attachments LessonPlanAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId, lessonDate])
+  @@index([campusId, lessonDate])
+  @@index([classId, sectionId])
+  @@index([subject])
+  @@index([status])
+}
+
+model LessonPlanAttachment {
+  id           String @id @default(uuid())
+  lessonPlanId String
+  fileUrl      String
+  fileName     String
+  fileType     String
+  fileSize     Int
+
+  lessonPlan LessonPlan @relation(fields: [lessonPlanId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([lessonPlanId])
+}
+
+model MasterLessonPlan {
+  id           String   @id @default(uuid())
+  className    String
+  subject      String
+  board        String
+  academicYear String
+  /// JSON array of { chapter, topics[], month?, estimated_weeks? }
+  details      Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classPlans ClassPlan[]
+
+  @@unique([className, subject, board, academicYear])
+  @@index([className, subject, board])
+  @@index([board])
+  @@index([academicYear])
+}
+
+model ClassPlan {
+  id           String  @id @default(uuid())
+  masterPlanId String?
+  masterPlan   MasterLessonPlan? @relation(fields: [masterPlanId], references: [id], onDelete: SetNull)
+
+  campusId String
+  campus   Campus @relation(fields: [campusId], references: [campus_id])
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
+
+  sectionId    String
+  subject      String
+  academicYear String
+  isPublished  Boolean @default(false)
+
+  topics ClassPlanTopic[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([teacherId, campusId, sectionId, subject, academicYear])
+  @@index([campusId, academicYear])
+  @@index([teacherId])
+}
+
+model ClassPlanTopic {
+  id          String    @id @default(uuid())
+  classPlanId String
+  classPlan   ClassPlan @relation(fields: [classPlanId], references: [id], onDelete: Cascade)
+
+  chapterTitle       String
+  chapterNumber      Int?
+  title              String
+  displayOrder       Float
+  status             ClassPlanTopicStatus @default(PENDING)
+  scheduledDate      DateTime?            @db.Date
+  completedOn        DateTime?            @db.Date
+  actualDurationMins Int?
+  teacherNotes       String?              @db.Text
+  isAddedByTeacher   Boolean              @default(false)
+
+  materials   TopicMaterial[]
+  assignments TopicAssignment[]
+  quizzes     TopicQuiz[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([classPlanId, chapterNumber, displayOrder])
+}
+
+model TopicMaterial {
+  id           String         @id @default(uuid())
+  topicId      String
+  topic        ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  fileName   String
+  fileUrl    String
+
+  createdAt DateTime @default(now())
+
+  @@index([topicId])
+}
+
+model TopicAssignment {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  title   String
+  dueDate DateTime?              @db.Date
+  fileUrl String?
+  status  TopicAssignmentStatus  @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([topicId])
+}
+
+model TopicQuiz {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  title          String
+  generatedByAi  Boolean @default(false)
+  fileUrl        String?
+
+  createdAt DateTime @default(now())
+
+  @@index([topicId])
 }
 
 model Scholarship {
@@ -666,4 +937,126 @@ model Scholarship {
   @@index([status])
   @@index([category])
   @@index([sourceType])
+}
+
+// ─── Pickup Feature ───────────────────────────────────────────────────────────
+
+/// People pre-approved by parents to pick up a student (reusable)
+model AuthorizedPickupPerson {
+  id           String  @id @default(uuid())
+  studentId    String
+  student      Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  name         String
+  relationship String  // e.g. "Uncle", "Grandmother", "Family Friend"
+  photoUrl     String?
+  remarks      String?
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pickupLogs PickupLog[]
+
+  @@index([studentId])
+  @@index([studentId, isActive])
+}
+
+/// One-time pickup request submitted by a parent for a specific date
+model PickupRequest {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  // Person who will come to pick up
+  name         String
+  relationship String
+  photoUrl     String?  // pre-submitted photo to verify identity at gate
+  remarks      String?
+
+  // Validity
+  validDate DateTime @db.Date  // the date this request is valid for
+
+  // Who raised the request
+  requestedBy String  // free-form identifier (e.g. phone, name)
+
+  // Approval workflow
+  status        PickupRequestStatus @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectedBy    String?
+  rejectionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pickupLog PickupLog?
+
+  @@index([studentId, validDate])
+  @@index([studentId, status])
+  @@index([requestedBy])
+  @@index([validDate, status])
+}
+
+// ─── Report Dashboard Config ────────────────────────────────────────────────
+
+enum ReportConfigStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model ReportDashboardConfig {
+  id          String             @id @default(uuid())
+  name        String
+  description String?
+  campusId    String
+  schoolLevel String
+  useGrades   Boolean            @default(false)
+  status      ReportConfigStatus @default(DRAFT)
+
+  enabledClasses Json // array of class UUIDs
+  skills         Json // array of skill objects
+  ratingScale    Json // rating scale config (type, points, labels, emoji_set, etc.)
+  display        Json // layout, charts, show_teacher_comments, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campusId])
+  @@index([campusId, status])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
+/// Teacher-confirmed record of a student being picked up
+model PickupLog {
+  id        String  @id @default(uuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  pickedUpAt  DateTime  // actual timestamp of pickup
+  confirmedBy String    // teacher_id
+  teacher     Teacher   @relation(fields: [confirmedBy], references: [teacher_id])
+
+  pickupPhotoUrl String?  // optional photo taken at pickup time
+
+  // Source of the pickup authorization
+  source             PickupSource
+  authorizedPersonId String?
+  authorizedPerson   AuthorizedPickupPerson? @relation(fields: [authorizedPersonId], references: [id])
+  pickupRequestId    String?                 @unique
+  pickupRequest      PickupRequest?          @relation(fields: [pickupRequestId], references: [id])
+
+  // Denormalized for audit trail — person details at time of pickup
+  personName         String
+  personRelationship String
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId, pickedUpAt])
+  @@index([confirmedBy])
+  @@index([studentId])
 }

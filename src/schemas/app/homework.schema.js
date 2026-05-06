@@ -508,6 +508,10 @@ export const HomeworkGenerateAttachmentUploadUrlSchema = {
                 type: "string",
                 description: "Homework ID (optional - if not provided, a temporary ID will be generated)"
             },
+            campus_id: {
+                type: "string",
+                description: "Campus/school ID for scoped storage path"
+            },
             file_name: {
                 type: "string",
                 minLength: 1,

@@ -1,55 +1,37 @@
-import {prisma} from "../prisma/prisma.js"
+import { prisma } from "../prisma/prisma.js";
 
 export async function createCampus(data) {
-  try {
-    await prisma.campus.create({ data });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  return prisma.campus.create({ data });
 }
 
 export async function getCampus(campus_id) {
-  try {
-    return await prisma.campus.findUnique({
-      where: { campus_id }
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+  return prisma.campus.findUnique({
+    where: { campus_id },
+  });
 }
 
-export async function getAllCampuses({omit={},where={}}) {
-  try {
-    return await prisma.campus.findMany({omit,where});
-  } catch (err) {
-    console.log(err);
-    return null;
-  }
+export async function getAllCampuses({ omit = {}, where = {} } = {}) {
+  return prisma.campus.findMany({ omit, where });
 }
 
 export async function updateCampus(data) {
-  try {
-    return await prisma.campus.update({
-      where: { campus_id: data.campus_id },
-      data,
-    });
-  } catch (err) {
-    console.log(err);
-    return null;
+  const { campus_id, ...rest } = data;
+  const updates = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== undefined),
+  );
+  if (Object.keys(updates).length === 0) {
+    const err = new Error("NO_FIELDS_TO_UPDATE");
+    err.code = "NO_FIELDS_TO_UPDATE";
+    throw err;
   }
+  return prisma.campus.update({
+    where: { campus_id },
+    data: updates,
+  });
 }
 
 export async function deleteCampus(campus_id) {
-  try {
-    await prisma.campus.delete({
-      where: { campus_id },
-    });
-    return true;
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
+  await prisma.campus.delete({
+    where: { campus_id },
+  });
 }

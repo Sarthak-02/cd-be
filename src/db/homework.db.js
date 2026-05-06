@@ -1,50 +1,34 @@
 import { prisma } from "../prisma/prisma.js"
 
-/**
- * Helper function to fetch target name based on target type and ID
- */
-async function getTargetName(targetType, targetId) {
-    try {
-        switch (targetType) {
-            case 'CLASS':
-                const classData = await prisma.class.findUnique({
-                    where: { class_id: targetId },
-                    select: { class_name: true }
-                });
-                return classData?.class_name || null;
-            
-            case 'SECTION':
-                const sectionData = await prisma.section.findUnique({
-                    where: { section_id: targetId },
-                    select: { section_name: true }
-                });
-                return sectionData?.section_name || null;
-            
-            case 'STUDENT':
-                const studentData = await prisma.student.findUnique({
-                    where: { student_id: targetId },
-                    select: { 
-                        student_first_name: true,
-                        student_middle_name: true,
-                        student_last_name: true 
-                    }
-                });
-                if (studentData) {
-                    return [
-                        studentData.student_first_name,
-                        studentData.student_middle_name,
-                        studentData.student_last_name
-                    ].filter(Boolean).join(' ');
-                }
-                return null;
-            
-            default:
-                return null;
-        }
-    } catch (err) {
-        console.error(`Error fetching target name for ${targetType}:`, err);
-        return null;
+async function batchResolveTargetNames(targets) {
+    const classIds = [...new Set(targets.filter(t => t.targetType === 'CLASS').map(t => t.targetId))];
+    const sectionIds = [...new Set(targets.filter(t => t.targetType === 'SECTION').map(t => t.targetId))];
+    const studentIds = [...new Set(targets.filter(t => t.targetType === 'STUDENT').map(t => t.targetId))];
+
+    const [classes, sections, students] = await Promise.all([
+        classIds.length ? prisma.class.findMany({ where: { class_id: { in: classIds } }, select: { class_id: true, class_name: true } }) : [],
+        sectionIds.length ? prisma.section.findMany({ where: { section_id: { in: sectionIds } }, select: { section_id: true, section_name: true } }) : [],
+        studentIds.length ? prisma.student.findMany({ where: { student_id: { in: studentIds } }, select: { student_id: true, student_first_name: true, student_middle_name: true, student_last_name: true } }) : [],
+    ]);
+
+    const map = new Map();
+    for (const c of classes) map.set(`CLASS:${c.class_id}`, c.class_name);
+    for (const s of sections) map.set(`SECTION:${s.section_id}`, s.section_name);
+    for (const s of students) {
+        map.set(`STUDENT:${s.student_id}`, [s.student_first_name, s.student_middle_name, s.student_last_name].filter(Boolean).join(' ') || null);
     }
+    return map;
+}
+
+function applyTargetNames(homework, nameMap) {
+    return {
+        ...homework,
+        targets: homework.targets.map(t => ({
+            ...t,
+            target_name: nameMap.get(`${t.targetType}:${t.targetId}`) ?? null,
+        })),
+        teacher: formatTeacherData(homework.teacher),
+    };
 }
 
 /**
@@ -67,26 +51,15 @@ function formatTeacherData(teacher) {
     };
 }
 
-/**
- * Helper function to format homework with target names and teacher name
- */
 async function formatHomeworkResponse(homework) {
-    // Fetch target names
-    const targetsWithNames = await Promise.all(
-        homework.targets.map(async (target) => {
-            const targetName = await getTargetName(target.targetType, target.targetId);
-            return {
-                ...target,
-                target_name: targetName
-            };
-        })
-    );
+    const nameMap = await batchResolveTargetNames(homework.targets);
+    return applyTargetNames(homework, nameMap);
+}
 
-    return {
-        ...homework,
-        targets: targetsWithNames,
-        teacher: formatTeacherData(homework.teacher)
-    };
+async function formatHomeworkListResponse(homeworks) {
+    if (!homeworks.length) return [];
+    const nameMap = await batchResolveTargetNames(homeworks.flatMap(hw => hw.targets));
+    return homeworks.map(hw => applyTargetNames(hw, nameMap));
 }
 
 /**
@@ -221,10 +194,43 @@ export async function getHomeworkByTeacher({
             skip: offset
         });
 
-        // Format homework with target names and teacher name
-        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
+        return await formatHomeworkListResponse(homework);
     } catch (err) {
         console.error("Error fetching homework by teacher:", err);
+        return [];
+    }
+}
+
+/**
+ * Published homework for a teacher that is still due (dueDate >= dueFrom), most recently created first.
+ */
+export async function getUpcomingDueHomeworkByTeacher({ teacherId, dueFrom, limit = 5 }) {
+    try {
+        const homework = await prisma.homework.findMany({
+            where: {
+                createdBy: teacherId,
+                status: "PUBLISHED",
+                dueDate: { gte: new Date(dueFrom) },
+            },
+            include: {
+                attachments: true,
+                targets: true,
+                teacher: {
+                    select: {
+                        teacher_id: true,
+                        teacher_first_name: true,
+                        teacher_middle_name: true,
+                        teacher_last_name: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
+
+        return await formatHomeworkListResponse(homework);
+    } catch (err) {
+        console.error("Error fetching upcoming due homework by teacher:", err);
         return [];
     }
 }
@@ -283,8 +289,7 @@ export async function getHomeworkByTarget({
             skip: offset
         });
 
-        // Format homework with target names and teacher name
-        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
+        return await formatHomeworkListResponse(homework);
     } catch (err) {
         console.error("Error fetching homework by target:", err);
         return [];
@@ -364,8 +369,7 @@ export async function getHomeworkForStudent({
             skip: offset
         });
 
-        // Format homework with target names and teacher name
-        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
+        return await formatHomeworkListResponse(homework);
     } catch (err) {
         console.error("Error fetching homework for student:", err);
         return [];
@@ -637,8 +641,7 @@ export async function getUpcomingHomework({
             }
         });
 
-        // Format homework with target names and teacher name
-        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
+        return await formatHomeworkListResponse(homework);
     } catch (err) {
         console.error("Error fetching upcoming homework:", err);
         return [];
@@ -685,8 +688,7 @@ export async function getOverdueHomework({
             }
         });
 
-        // Format homework with target names and teacher name
-        return await Promise.all(homework.map(hw => formatHomeworkResponse(hw)));
+        return await formatHomeworkListResponse(homework);
     } catch (err) {
         console.error("Error fetching overdue homework:", err);
         return [];

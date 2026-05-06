@@ -1,0 +1,378 @@
+import { prisma } from "../prisma/prisma.js";
+
+const lessonPlanInclude = {
+  attachments: true,
+  classRef: {
+    select: {
+      class_id: true,
+      class_name: true,
+      class_short_name: true,
+    },
+  },
+  section: {
+    select: {
+      section_id: true,
+      section_name: true,
+      section_short_name: true,
+    },
+  },
+  teacher: {
+    select: {
+      teacher_id: true,
+      teacher_first_name: true,
+      teacher_middle_name: true,
+      teacher_last_name: true,
+      teacher_employee_code: true,
+    },
+  },
+};
+
+function mapLessonPlanRow(row) {
+  if (!row) return null;
+  const { classRef, ...rest } = row;
+  return {
+    ...rest,
+    class: classRef,
+  };
+}
+
+export async function validateLessonPlanScope({ teacherId, classId, sectionId }) {
+  const teacher = await prisma.teacher.findUnique({
+    where: { teacher_id: teacherId },
+    select: { campus_id: true },
+  });
+  if (!teacher) return { ok: false, message: "Teacher not found" };
+
+  const classRow = await prisma.class.findUnique({
+    where: { class_id: classId },
+    select: { campus_id: true },
+  });
+  if (!classRow) return { ok: false, message: "Class not found" };
+  if (classRow.campus_id !== teacher.campus_id) {
+    return { ok: false, message: "Class is not in the teacher's campus" };
+  }
+
+  if (sectionId) {
+    const section = await prisma.section.findUnique({
+      where: { section_id: sectionId },
+      select: { class_id: true },
+    });
+    if (!section) return { ok: false, message: "Section not found" };
+    if (section.class_id !== classId) {
+      return { ok: false, message: "Section does not belong to the given class" };
+    }
+  }
+
+  return { ok: true, campusId: teacher.campus_id };
+}
+
+export async function createLessonPlan({
+  lessonDate,
+  chapterTopic,
+  description,
+  learningObjectives,
+  activities,
+  homework,
+  status = "PLANNED",
+  subject,
+  classId,
+  sectionId,
+  teacherId,
+  campusId,
+  attachments = [],
+}) {
+  const plan = await prisma.lessonPlan.create({
+    data: {
+      lessonDate: new Date(lessonDate),
+      chapterTopic,
+      description: description?.trim() ? description.trim() : null,
+      learningObjectives,
+      activities,
+      homework: homework ?? null,
+      status,
+      subject: typeof subject === "string" ? subject.trim() : subject,
+      classId,
+      sectionId: sectionId ?? null,
+      teacherId,
+      campusId,
+      attachments: attachments.length
+        ? {
+            create: attachments,
+          }
+        : undefined,
+    },
+    include: lessonPlanInclude,
+  });
+  return mapLessonPlanRow(plan);
+}
+
+export async function getLessonPlanById(lessonPlanId) {
+  const plan = await prisma.lessonPlan.findUnique({
+    where: { id: lessonPlanId },
+    include: lessonPlanInclude,
+  });
+  return mapLessonPlanRow(plan);
+}
+
+export async function listLessonPlans({
+  teacherId,
+  campusId,
+  subject,
+  classId,
+  sectionId,
+  status,
+  startDate,
+  endDate,
+  limit = 50,
+  offset = 0,
+}) {
+  const where = {};
+
+  if (teacherId) where.teacherId = teacherId;
+  if (campusId) where.campusId = campusId;
+  if (subject !== undefined && subject !== null && subject !== "") {
+    where.subject = subject;
+  }
+  if (classId) where.classId = classId;
+  if (sectionId !== undefined && sectionId !== null && sectionId !== "") {
+    where.sectionId = sectionId;
+  }
+  if (status) where.status = status;
+
+  if (startDate || endDate) {
+    where.lessonDate = {};
+    if (startDate) where.lessonDate.gte = new Date(startDate);
+    if (endDate) where.lessonDate.lte = new Date(endDate);
+  }
+
+  const rows = await prisma.lessonPlan.findMany({
+    where,
+    include: lessonPlanInclude,
+    orderBy: { lessonDate: "desc" },
+    take: limit,
+    skip: offset,
+  });
+
+  return rows.map(mapLessonPlanRow);
+}
+
+/**
+ * Lesson plans visible to a student: same class, section-wide or matching section.
+ */
+export async function listLessonPlansForStudentSectionSummary({
+  campusId,
+  classId,
+  sectionId,
+  lessonDateFrom,
+  lessonDateTo,
+  limit = 5,
+}) {
+  const rows = await prisma.lessonPlan.findMany({
+    where: {
+      campusId,
+      classId,
+      OR: [{ sectionId: null }, { sectionId }],
+      lessonDate: {
+        gte: lessonDateFrom,
+        lte: lessonDateTo,
+      },
+    },
+    orderBy: { lessonDate: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      lessonDate: true,
+      chapterTopic: true,
+      subject: true,
+      status: true,
+      sectionId: true,
+      teacher: {
+        select: {
+          teacher_id: true,
+          teacher_first_name: true,
+          teacher_middle_name: true,
+          teacher_last_name: true,
+        },
+      },
+    },
+  });
+
+  return rows.map((row) => {
+    const t = row.teacher;
+    const teacherName = t
+      ? [t.teacher_first_name, t.teacher_middle_name, t.teacher_last_name].filter(Boolean).join(" ") ||
+        t.teacher_id
+      : null;
+    const { teacher, ...rest } = row;
+    return {
+      ...rest,
+      teacher: t
+        ? {
+            teacher_id: t.teacher_id,
+            teacher_name: teacherName,
+          }
+        : null,
+    };
+  });
+}
+
+export async function updateLessonPlan(lessonPlanId, patch) {
+  const data = {};
+
+  if (patch.lessonDate !== undefined) data.lessonDate = new Date(patch.lessonDate);
+  if (patch.chapterTopic !== undefined) data.chapterTopic = patch.chapterTopic;
+  if (patch.description !== undefined) {
+    data.description =
+      patch.description === null || patch.description === ""
+        ? null
+        : String(patch.description).trim() || null;
+  }
+  if (patch.learningObjectives !== undefined) {
+    data.learningObjectives = patch.learningObjectives;
+  }
+  if (patch.activities !== undefined) data.activities = patch.activities;
+  if (patch.homework !== undefined) data.homework = patch.homework;
+  if (patch.status !== undefined) data.status = patch.status;
+  if (patch.subject !== undefined) {
+    data.subject =
+      patch.subject === null || patch.subject === ""
+        ? ""
+        : String(patch.subject).trim();
+  }
+  if (patch.classId !== undefined) data.classId = patch.classId;
+  if (patch.sectionId !== undefined) {
+    data.sectionId = patch.sectionId === null ? null : patch.sectionId;
+  }
+
+  if (Object.keys(data).length === 0) {
+    return getLessonPlanById(lessonPlanId);
+  }
+
+  try {
+    const plan = await prisma.lessonPlan.update({
+      where: { id: lessonPlanId },
+      data,
+      include: lessonPlanInclude,
+    });
+    return mapLessonPlanRow(plan);
+  } catch (e) {
+    if (e.code === "P2025") return null;
+    throw e;
+  }
+}
+
+export async function deleteLessonPlan(lessonPlanId) {
+  try {
+    await prisma.lessonPlan.delete({ where: { id: lessonPlanId } });
+    return true;
+  } catch (e) {
+    if (e.code === "P2025") return false;
+    throw e;
+  }
+}
+
+export async function addLessonPlanAttachments(lessonPlanId, attachments) {
+  if (!attachments?.length) return getLessonPlanById(lessonPlanId);
+
+  await prisma.lessonPlanAttachment.createMany({
+    data: attachments.map((a) => ({
+      lessonPlanId,
+      fileUrl: a.fileUrl,
+      fileName: a.fileName,
+      fileType: a.fileType,
+      fileSize: a.fileSize,
+    })),
+  });
+
+  return getLessonPlanById(lessonPlanId);
+}
+
+export async function removeLessonPlanAttachment(attachmentId) {
+  try {
+    await prisma.lessonPlanAttachment.delete({ where: { id: attachmentId } });
+    return true;
+  } catch (e) {
+    if (e.code === "P2025") return false;
+    throw e;
+  }
+}
+
+export async function getAttachmentLessonPlanId(attachmentId) {
+  const row = await prisma.lessonPlanAttachment.findUnique({
+    where: { id: attachmentId },
+    select: { lessonPlanId: true },
+  });
+  return row?.lessonPlanId ?? null;
+}
+
+export async function cloneLessonPlansToSection({ sourceSectionId, destinationSectionId, subject }) {
+  const sourceSection = await prisma.section.findUnique({
+    where: { section_id: sourceSectionId },
+    select: { section_id: true },
+  });
+  if (!sourceSection) return { ok: false, message: "Source section not found" };
+
+  const destSection = await prisma.section.findUnique({
+    where: { section_id: destinationSectionId },
+    select: { section_id: true },
+  });
+  if (!destSection) return { ok: false, message: "Destination section not found" };
+
+  const sourcePlans = await prisma.classPlan.findMany({
+    where: { sectionId: sourceSectionId, subject },
+    include: {
+      topics: {
+        orderBy: [{ chapterNumber: "asc" }, { displayOrder: "asc" }],
+        include: {
+          materials: { orderBy: { createdAt: "asc" } },
+          assignments: { orderBy: { createdAt: "asc" } },
+          quizzes: { orderBy: { createdAt: "asc" } },
+        },
+      },
+    },
+  });
+
+  if (sourcePlans.length === 0) {
+    return { ok: true, cloned: 0, plans: [] };
+  }
+
+  const clonedPlans = await prisma.$transaction(
+    sourcePlans.map((plan) => {
+      const { id, createdAt, updatedAt, topics, sectionId, ...rest } = plan;
+      return prisma.classPlan.create({
+        data: {
+          ...rest,
+          sectionId: destinationSectionId,
+          topics: topics.length
+            ? {
+                create: topics.map(({ id: _id, classPlanId: _cpId, createdAt: _ca, updatedAt: _ua, materials, assignments, quizzes, ...topic }) => ({
+                  ...topic,
+                  materials: materials.length
+                    ? { create: materials.map(({ id: _id, topicId: _tid, createdAt: _ca, ...m }) => m) }
+                    : undefined,
+                  assignments: assignments.length
+                    ? { create: assignments.map(({ id: _id, topicId: _tid, createdAt: _ca, updatedAt: _ua, ...a }) => a) }
+                    : undefined,
+                  quizzes: quizzes.length
+                    ? { create: quizzes.map(({ id: _id, topicId: _tid, createdAt: _ca, updatedAt: _ua, ...q }) => q) }
+                    : undefined,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          topics: {
+            orderBy: [{ chapterNumber: "asc" }, { displayOrder: "asc" }],
+            include: {
+              materials: { orderBy: { createdAt: "asc" } },
+              assignments: { orderBy: { createdAt: "asc" } },
+              quizzes: { orderBy: { createdAt: "asc" } },
+            },
+          },
+        },
+      });
+    })
+  );
+
+  return { ok: true, cloned: clonedPlans.length, plans: clonedPlans };
+}

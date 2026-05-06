@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "nodemon src/server.js",
     "dev:userfacing": "nodemon server.userfacing.js",
@@ -17,7 +20,18 @@
     "deploy:onboarding": "gcloud app deploy app.control-desk.yaml",
     "deploy:default": "gcloud app deploy app.default.yaml",
     "deploy:all": "gcloud app deploy app.yaml app.control-desk.yaml app.default.yaml",
-    "deploy:dispatch": "gcloud app deploy dispatch.yaml"
+    "deploy:dispatch": "gcloud app deploy dispatch.yaml",
+    "test:load:auth": "k6 run test/load/auth.load.js",
+    "test:load:attendance": "k6 run test/load/attendance.load.js",
+    "test:load:homework": "k6 run test/load/homework.load.js",
+    "test:load:exam": "k6 run test/load/exam.load.js",
+    "test:load:notifications": "k6 run test/load/notifications.load.js",
+    "test:load:pickup": "k6 run test/load/pickup.load.js",
+    "test:load:broadcast": "k6 run test/load/broadcast.load.js",
+    "test:load:journey": "k6 run test/load/full-journey.load.js",
+    "test:smoke": "k6 run -e SCENARIO=smoke test/load/full-journey.load.js",
+    "test:stress": "k6 run -e SCENARIO=stress test/load/full-journey.load.js",
+    "test:spike": "k6 run -e SCENARIO=spike test/load/full-journey.load.js"
   },
   "dependencies": {
     "@fastify/ajv-compiler": "^4.0.5",
@@ -37,7 +51,8 @@
     "fastify": "^5.6.2",
     "fastify-plugin": "^5.1.0",
     "firebase-admin": "^13.6.0",
-    "mysql2": "^3.15.3"
+    "mysql2": "^3.15.3",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.4",

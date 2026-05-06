@@ -7,6 +7,11 @@ export const BroadcastCreateRequestSchema = {
         properties: {
             title: { type: "string" },
             message: { type: "string" },
+            category: {
+                type: "string",
+                description:
+                    "Announcement category for UI (e.g. urgent, information, fun). Defaults to \"general\" if omitted.",
+            },
             attachmentUrls: {
                 type: "array",
                 items: { type: "object" }
@@ -78,6 +83,7 @@ export const BroadcastGetAllSchema = {
                 description: "Filter by notification source type. For broadcasts, use BROADCAST or omit."
             },
             createdBy: { type: "string" },
+            category: { type: "string" },
             limit: { 
                 type: "number",
                 minimum: 1,
@@ -88,6 +94,46 @@ export const BroadcastGetAllSchema = {
                 type: "number",
                 minimum: 0,
                 default: 0
+            }
+        }
+    }
+}
+
+export const BroadcastAttachmentUploadUrlSchema = {
+    tags: ["Broadcast"],
+    body: {
+        type: "object",
+        required: ["file_name", "mime_type"],
+        properties: {
+            broadcast_id: {
+                type: "string",
+                description: "Broadcast ID (optional - if not provided, a temporary ID will be generated)"
+            },
+            campus_id: {
+                type: "string",
+                description: "Campus/school ID for scoped storage path"
+            },
+            file_name: { type: "string", minLength: 1 },
+            mime_type: {
+                type: "string",
+                enum: [
+                    "application/pdf",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "text/plain",
+                    "image/jpeg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp",
+                    "image/svg+xml",
+                    "image/tiff",
+                    "image/bmp",
+                    "image/ico",
+                ]
             }
         }
     }
@@ -107,6 +153,7 @@ export const BroadcastUpdateSchema = {
         properties: {
             title: { type: "string" },
             message: { type: "string" },
+            category: { type: "string" },
             attachmentUrls: {
                 type: "array",
                 items: { type: "object" }

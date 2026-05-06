@@ -95,6 +95,7 @@ function formatBroadcastMessage(payload) {
  * Format a single notification for frontend
  */
 export function formatNotificationForFrontend(notification) {
+  const payload = notification.payload;
   return {
     id: notification.id,
     receiverId: notification.receiverId,
@@ -104,6 +105,9 @@ export function formatNotificationForFrontend(notification) {
     read: notification.read,
     sourceType: notification.sourceType,
     sourceId: notification.sourceId,
+    ...(payload && typeof payload === "object" && payload.category != null
+      ? { category: payload.category }
+      : {}),
   };
 }
 
