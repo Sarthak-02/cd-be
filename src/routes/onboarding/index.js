@@ -10,6 +10,7 @@ import { uploadRoutes } from "./upload.route.js";
 import reportDashboardConfigRoutes from "./reportDashboardConfig.routes.js";
 import endUserRoutes from "./enduser.routes.js";
 import campusTierPermissionRoutes from "./campusTierPermission.routes.js";
+import admissionRoutes from "./admission.routes.js";
 
 export {
     authRoutes,
@@ -24,4 +25,5 @@ export {
     reportDashboardConfigRoutes,
     endUserRoutes,
     campusTierPermissionRoutes,
+    admissionRoutes,
 }
