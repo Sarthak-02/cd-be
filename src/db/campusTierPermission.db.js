@@ -55,3 +55,10 @@ export async function deleteCampusTierPermission({ campus_id, tier, role, featur
     where: { campus_id_tier_role_feature_id: { campus_id, tier, role, feature_id } },
   });
 }
+
+export async function getCampusTierPermissionsByRole({ campus_id, role }) {
+  return prisma.campusTierPermission.findMany({
+    where: { campus_id, role },
+    orderBy: [{ tier: "asc" }, { feature_id: "asc" }],
+  });
+}

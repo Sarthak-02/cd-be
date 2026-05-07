@@ -68,7 +68,10 @@ export async function loginController(req, reply) {
       path: "/",
       maxAge: 86400
     });
-
+    
+    delete user.campus;
+    delete user.details;
+  
     reply.send({
       success: true,
       message: "Logged in",

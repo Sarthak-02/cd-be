@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/prisma.js";
+import { getCampusTierPermissionsByRole } from "./campusTierPermission.db.js";
 
 export async function createStudent(data) {
   return prisma.student.create({ data });
@@ -43,6 +44,97 @@ export async function deleteStudent(student_id) {
   await prisma.student.delete({
     where: { student_id },
   });
+}
+
+export async function getStudentPermissions(student_id) {
+  try {
+    const student = await prisma.student.findUnique({
+      where: { student_id },
+      include: {
+        campus: {
+          select: {
+            campus_id: true,
+            campus_name: true,
+            extras: true,
+          },
+        },
+        section: {
+          select: {
+            section_id: true,
+            section_name: true,
+            extras: true,
+            classRef: {
+              select: {
+                class_id: true,
+                class_name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!student) return null;
+
+    const tierPermissions = await getCampusTierPermissionsByRole({
+      campus_id: student.campus_id,
+      role: "student",
+    });
+
+    const campus = {
+      campus_id: student.campus.campus_id,
+      campus_name: student.campus.campus_name,
+      term_start_date: student.campus.extras?.term_start_date || null,
+      term_end_date: student.campus.extras?.term_end_date || null,
+      academic_calendar: student.campus.extras?.academic_calendar || null,
+    };
+
+    const details = {
+      student_id: student.student_id,
+      student_first_name: student.student_first_name,
+      student_middle_name: student.student_middle_name,
+      student_last_name: student.student_last_name,
+      student_admission_no: student.student_admission_no,
+      student_roll_no: student.student_roll_no,
+      student_photo_url: student.student_photo_url,
+      student_gender: student.student_gender,
+      student_dob: student.student_dob,
+      student_current_status: student.student_current_status,
+      student_section_id: student.student_section_id,
+      campus_id: student.campus_id,
+      extras: student.extras,
+    };
+
+    const section = student.section
+      ? {
+          section_id: student.section.section_id,
+          section_name: student.section.section_name,
+          section_subjects: student.section.extras?.section_subjects || [],
+          class_id: student.section.classRef?.class_id || null,
+          class_name: student.section.classRef?.class_name || null,
+        }
+      : null;
+
+    const studentClassId = student.section?.classRef?.class_id || null;
+    const features = tierPermissions
+      .filter(
+        (p) =>
+          p.enabled &&
+          (p.class_ids.length === 0 ||
+            (studentClassId && p.class_ids.includes(studentClassId)))
+      )
+      .map((p) => p.feature_id);
+
+    return {
+      campus,
+      details,
+      section,
+      features,
+    };
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
 }
 
 export async function getActiveStudentsBySection(section_id) {

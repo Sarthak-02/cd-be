@@ -7,3 +7,13 @@ export const StudentsBySectionGetRequestSchema = {
     }
   }
 };
+
+export const StudentPermissionsGetRequestSchema = {
+  querystring: {
+    type: 'object',
+    required: ['student_id'],
+    properties: {
+      student_id: { type: 'string', minLength: 1 }
+    }
+  }
+};

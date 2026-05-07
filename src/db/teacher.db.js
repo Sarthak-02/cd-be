@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/prisma.js";
+import { getCampusTierPermissionsByRole } from "./campusTierPermission.db.js";
 
 export async function createTeacher(data) {
   return prisma.teacher.create({ data });
@@ -171,6 +172,42 @@ export async function getTeacherPermissions(teacher_id) {
       }))
     );
 
+    const teacherClassIds = Array.from(classesMap.keys());
+
+    const allTierPermissions = await getCampusTierPermissionsByRole({
+      campus_id: teacher.campus_id,
+      role: "staff",
+    });
+
+    const features = allTierPermissions
+      .filter(
+        (p) =>
+          p.enabled &&
+          (p.class_ids.length === 0 ||
+            p.class_ids.some((id) => teacherClassIds.includes(id)))
+      )
+      .map((p) => p.feature_id);
+
+    const campus = {
+      campus_id: teacher.campus.campus_id,
+      campus_name: teacher.campus.campus_name,
+      term_start_date: teacher.campus.extras?.term_start_date || null,
+      term_end_date: teacher.campus.extras?.term_end_date || null,
+      campus_exam_types: teacher.campus.extras?.campus_exam_types || null,
+      class_grading_config: teacher.campus.extras?.class_grading_config || null,
+      attendance_slots: teacher.campus.extras?.attendance_slots || null,
+      academic_calendar: teacher.campus.extras?.academic_calendar || null,
+    };
+
+    const details = {
+      teacher_id: teacher.teacher_id,
+      teacher_first_name: teacher.teacher_first_name,
+      teacher_middle_name: teacher.teacher_middle_name,
+      teacher_last_name: teacher.teacher_last_name,
+      extras: teacher.extras,
+      campus_id: teacher.campus_id,
+    };
+
     return {
       teacher_id: teacher.teacher_id,
       teacher_name: [
@@ -190,6 +227,9 @@ export async function getTeacherPermissions(teacher_id) {
       sections: formattedSections,
       students,
       all_section_subjects: Array.from(sectionSubjectsMap.values()),
+      campus,
+      details,
+      features,
     };
   } catch (err) {
     console.log(err);
