@@ -207,6 +207,7 @@ model Campus {
   teachers Teacher[]
   lessonPlans LessonPlan[]
   classPlans  ClassPlan[]
+  campusTierPermissions CampusTierPermission[]
 
   @@index([school_id])
 }
@@ -1053,6 +1054,22 @@ model ReportDashboardConfig {
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Teacher-confirmed record of a student being picked up
+model CampusTierPermission {
+  campus_id  String
+  tier       String
+  role       String   // 'student' | 'staff'
+  feature_id String
+  enabled    Boolean  @default(false)
+  class_ids  String[] @default([])
+  updated_at DateTime @default(now()) @updatedAt
+
+  campus Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  @@id([campus_id, tier, role, feature_id])
+  @@index([campus_id, tier, role])
+  @@index([campus_id])
+}
+
 model PickupLog {
   id        String  @id @default(uuid())
   studentId String
