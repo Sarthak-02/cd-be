@@ -341,6 +341,35 @@ export async function markConversationRead(conversationId, userId, readAt = new 
 }
 
 /**
+ * Broadcast a message from one sender to multiple recipients.
+ * Finds or creates a DIRECT conversation for each recipient, then sends the message.
+ * Returns arrays of succeeded and failed results.
+ */
+export async function broadcastMessageToUsers(senderUserId, senderRole, recipientUserIds, body) {
+  const unique = [...new Set(recipientUserIds.filter((id) => id && id !== senderUserId))];
+
+  const results = await Promise.allSettled(
+    unique.map(async (recipientId) => {
+      const conversation = await findOrCreateDirectConversation(senderUserId, senderRole, recipientId);
+      const msg = await createChatMessage(conversation.id, senderUserId, body);
+      return { recipient_user_id: recipientId, conversation_id: conversation.id, message_id: msg.id };
+    })
+  );
+
+  const succeeded = [];
+  const failed = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r.status === "fulfilled") {
+      succeeded.push(r.value);
+    } else {
+      failed.push({ recipient_user_id: unique[i], error: r.reason?.message || "Unknown error" });
+    }
+  }
+  return { succeeded, failed };
+}
+
+/**
  * Unread counts per linked account (e.g. student + parents). Each userId is an EndUser.userid.
  */
 export async function getMessagingSummaryForUserIds(userIds) {

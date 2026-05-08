@@ -64,3 +64,13 @@ export const SendMessageSchema = {
     { additionalProperties: false }
   ),
 };
+
+export const BroadcastMessageSchema = {
+  body: Type.Object(
+    {
+      recipient_user_ids: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 500 }),
+      body: Type.String({ minLength: 1, maxLength: 20000 }),
+    },
+    { additionalProperties: false }
+  ),
+};

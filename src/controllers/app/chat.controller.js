@@ -10,6 +10,7 @@ import {
   createChatMessage,
   markConversationRead,
   resolveParticipantDisplayNames,
+  broadcastMessageToUsers,
 } from "../../db/chat.db.js";
 
 function formatMessage(m) {
@@ -292,6 +293,42 @@ export async function sendMessageController(req, reply) {
     return reply.code(status).send({
       success: false,
       error: err.message || "Unable to send message",
+    });
+  }
+}
+
+export async function broadcastMessageController(req, reply) {
+  try {
+    const userInfo = req.token_info;
+    if (!userInfo?.userid || !userInfo?.role) {
+      return reply.code(401).send({ success: false, error: "Unauthorized" });
+    }
+
+    const { recipient_user_ids, body } = req.body;
+
+    const { succeeded, failed } = await broadcastMessageToUsers(
+      userInfo.userid,
+      userInfo.role,
+      recipient_user_ids,
+      body
+    );
+
+    return reply.code(207).send({
+      success: true,
+      data: {
+        total: recipient_user_ids.length,
+        sent: succeeded.length,
+        failed: failed.length,
+        succeeded,
+        failed,
+      },
+    });
+  } catch (err) {
+    req.log.error(err);
+    const status = err.status || 500;
+    return reply.code(status).send({
+      success: false,
+      error: err.message || "Unable to broadcast message",
     });
   }
 }
