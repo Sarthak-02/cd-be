@@ -36,7 +36,8 @@ function sendPrismaError(reply, err, req) {
 
 export async function section_post(req, reply) {
   try {
-    const section = await createSection(req.body);
+    const { campus_id, ...sectionData } = req.body;
+    const section = await createSection(sectionData);
     return reply.code(201).send({
       success: true,
       message: "Section created successfully",
