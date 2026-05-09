@@ -349,6 +349,11 @@ export async function getExamsForStudent({
                     select: {
                         school_id: true
                     }
+                },
+                section: {
+                    select: {
+                        class_id: true
+                    }
                 }
             }
         });
@@ -380,6 +385,16 @@ export async function getExamsForStudent({
                         }
                     }
                 },
+                // Class target
+                ...(student.section?.class_id ? [{
+                    target: "CLASS",
+                    targets: {
+                        some: {
+                            targetType: "CLASS",
+                            targetId: student.section.class_id
+                        }
+                    }
+                }] : []),
                 // School target
                 {
                     target: "SCHOOL",
