@@ -9,6 +9,9 @@ import {
   updateClassPlanTopic,
   deleteClassPlanTopic,
   getTopicClassPlanId,
+  createTopicProgress,
+  updateTopicProgress,
+  deleteTopicProgress,
   addTopicMaterial,
   deleteTopicMaterial,
   addTopicAssignment,
@@ -21,12 +24,12 @@ import {
 
 export async function seed_class_plan_from_master(req, reply) {
   try {
-    const { board, subject, section_id, academic_year, campus_id, teacher_id, is_published = false } = req.body;
+    const { board, subject, class_id, academic_year, campus_id, teacher_id, is_published = false } = req.body;
 
     const result = await seedClassPlanFromMaster({
       board,
       subject,
-      sectionId: section_id,
+      classId: class_id,
       academicYear: academic_year,
       campusId: campus_id,
       teacherId: teacher_id,
@@ -56,12 +59,6 @@ function toTopicDbShape(t) {
     chapterNumber: t.chapter_number ?? null,
     title: t.title,
     displayOrder: t.display_order,
-    status: t.status ?? "PENDING",
-    scheduledDate: t.scheduled_date ? new Date(t.scheduled_date) : null,
-    completedOn: t.completed_on ? new Date(t.completed_on) : null,
-    actualDurationMins: t.actual_duration_mins ?? null,
-    teacherNotes: t.teacher_notes ?? null,
-    isAddedByTeacher: t.is_added_by_teacher ?? false,
   };
 }
 
@@ -73,7 +70,7 @@ export async function create_class_plan(req, reply) {
       master_plan_id,
       campus_id,
       teacher_id,
-      section_id,
+      class_id,
       subject,
       academic_year,
       is_published = false,
@@ -84,7 +81,7 @@ export async function create_class_plan(req, reply) {
       masterPlanId: master_plan_id ?? null,
       campusId: campus_id,
       teacherId: teacher_id,
-      sectionId: section_id,
+      classId: class_id,
       subject,
       academicYear: academic_year,
       isPublished: is_published,
@@ -106,7 +103,8 @@ export async function create_class_plan(req, reply) {
 
 export async function get_class_plan_by_id(req, reply) {
   try {
-    const plan = await getClassPlanById(req.params.class_plan_id);
+    const { section_id } = req.query || {};
+    const plan = await getClassPlanById(req.params.class_plan_id, section_id);
 
     if (!plan) {
       return reply.code(404).send({ success: false, message: "Class plan not found" });
@@ -125,6 +123,7 @@ export async function list_class_plans(req, reply) {
       campus_id,
       teacher_id,
       section_id,
+      class_id,
       subject,
       academic_year,
       is_published,
@@ -132,10 +131,10 @@ export async function list_class_plans(req, reply) {
       offset = 0,
     } = req.query || {};
 
-    if (!campus_id && !teacher_id) {
+    if (!campus_id && !teacher_id && !section_id) {
       return reply.code(400).send({
         success: false,
-        message: "Provide campus_id and/or teacher_id to list class plans",
+        message: "Provide section_id, campus_id, and/or teacher_id to list class plans",
       });
     }
 
@@ -143,6 +142,7 @@ export async function list_class_plans(req, reply) {
       campusId: campus_id,
       teacherId: teacher_id,
       sectionId: section_id,
+      classId: class_id,
       subject,
       academicYear: academic_year,
       isPublished: is_published,
@@ -164,7 +164,7 @@ export async function update_class_plan(req, reply) {
 
     const patch = {};
     if (body.master_plan_id !== undefined) patch.masterPlanId = body.master_plan_id;
-    if (body.section_id !== undefined) patch.sectionId = body.section_id;
+    if (body.class_id !== undefined) patch.classId = body.class_id;
     if (body.subject !== undefined) patch.subject = body.subject;
     if (body.academic_year !== undefined) patch.academicYear = body.academic_year;
     if (body.is_published !== undefined) patch.isPublished = body.is_published;
@@ -233,16 +233,6 @@ export async function update_class_plan_topic(req, reply) {
     if (body.chapter_number !== undefined) patch.chapterNumber = body.chapter_number;
     if (body.title !== undefined) patch.title = body.title;
     if (body.display_order !== undefined) patch.displayOrder = body.display_order;
-    if (body.status !== undefined) patch.status = body.status;
-    if (body.scheduled_date !== undefined) {
-      patch.scheduledDate = body.scheduled_date ? new Date(body.scheduled_date) : null;
-    }
-    if (body.completed_on !== undefined) {
-      patch.completedOn = body.completed_on ? new Date(body.completed_on) : null;
-    }
-    if (body.actual_duration_mins !== undefined) patch.actualDurationMins = body.actual_duration_mins;
-    if (body.teacher_notes !== undefined) patch.teacherNotes = body.teacher_notes;
-    if (body.is_added_by_teacher !== undefined) patch.isAddedByTeacher = body.is_added_by_teacher;
 
     const topic = await updateClassPlanTopic(topic_id, patch);
 
@@ -275,19 +265,88 @@ export async function delete_class_plan_topic(req, reply) {
   }
 }
 
+// ─── Topic Progress ───────────────────────────────────────────────────────────
+
+export async function create_topic_progress(req, reply) {
+  try {
+    const { topic_id } = req.params;
+    const { section_id, status, scheduled_date, completed_on, actual_duration_mins, teacher_notes, is_added_by_teacher } = req.body;
+
+    const progress = await createTopicProgress(topic_id, section_id, {
+      status,
+      scheduledDate: scheduled_date ? new Date(scheduled_date) : null,
+      completedOn: completed_on ? new Date(completed_on) : null,
+      actualDurationMins: actual_duration_mins ?? null,
+      teacherNotes: teacher_notes ?? null,
+      isAddedByTeacher: is_added_by_teacher ?? false,
+    });
+
+    reply.code(201).send({ success: true, message: "Progress created", data: progress });
+  } catch (err) {
+    if (err.code === "P2003") {
+      return reply.code(404).send({ success: false, message: "Topic not found" });
+    }
+    console.error(err);
+    reply.code(500).send({ success: false, message: err.message || "Unable to create progress" });
+  }
+}
+
+export async function update_topic_progress(req, reply) {
+  try {
+    const { progress_id } = req.params;
+    const body = req.body;
+
+    const patch = {};
+    if (body.status !== undefined) patch.status = body.status;
+    if (body.scheduled_date !== undefined) {
+      patch.scheduledDate = body.scheduled_date ? new Date(body.scheduled_date) : null;
+    }
+    if (body.completed_on !== undefined) {
+      patch.completedOn = body.completed_on ? new Date(body.completed_on) : null;
+    }
+    if (body.actual_duration_mins !== undefined) patch.actualDurationMins = body.actual_duration_mins;
+    if (body.teacher_notes !== undefined) patch.teacherNotes = body.teacher_notes;
+    if (body.is_added_by_teacher !== undefined) patch.isAddedByTeacher = body.is_added_by_teacher;
+
+    const progress = await updateTopicProgress(progress_id, patch);
+
+    if (!progress) {
+      return reply.code(404).send({ success: false, message: "Progress not found" });
+    }
+
+    reply.send({ success: true, message: "Progress updated", data: progress });
+  } catch (err) {
+    console.error(err);
+    reply.code(500).send({ success: false, message: err.message || "Unable to update progress" });
+  }
+}
+
+export async function delete_topic_progress(req, reply) {
+  try {
+    const ok = await deleteTopicProgress(req.params.progress_id);
+
+    if (!ok) return reply.code(404).send({ success: false, message: "Progress not found" });
+
+    reply.send({ success: true, message: "Progress deleted" });
+  } catch (err) {
+    console.error(err);
+    reply.code(500).send({ success: false, message: err.message || "Unable to delete progress" });
+  }
+}
+
 // ─── Materials ────────────────────────────────────────────────────────────────
 
 export async function add_topic_material(req, reply) {
   try {
-    const { topic_id } = req.params;
+    const { progress_id } = req.params;
     const { file_name, file_url } = req.body;
 
-    const material = await addTopicMaterial(topic_id, { fileName: file_name, fileUrl: file_url });
+    const material = await addTopicMaterial(progress_id, { fileName: file_name, fileUrl: file_url });
 
     reply.code(201).send({ success: true, message: "Material added", data: material });
   } catch (err) {
     if (err.code === "P2003") {
-      return reply.code(404).send({ success: false, message: "Topic not found" });
+      return reply.code(404).send({ success: false, message: "Progress not found" });
     }
     console.error(err);
     reply.code(500).send({ success: false, message: err.message || "Unable to add material" });
@@ -311,10 +370,10 @@ export async function delete_topic_material(req, reply) {
 
 export async function add_topic_assignment(req, reply) {
   try {
-    const { topic_id } = req.params;
+    const { progress_id } = req.params;
     const { title, due_date, file_url, status } = req.body;
 
-    const assignment = await addTopicAssignment(topic_id, {
+    const assignment = await addTopicAssignment(progress_id, {
       title,
       dueDate: due_date,
       fileUrl: file_url,
@@ -324,7 +383,7 @@ export async function add_topic_assignment(req, reply) {
     reply.code(201).send({ success: true, message: "Assignment added", data: assignment });
   } catch (err) {
     if (err.code === "P2003") {
-      return reply.code(404).send({ success: false, message: "Topic not found" });
+      return reply.code(404).send({ success: false, message: "Progress not found" });
     }
     console.error(err);
     reply.code(500).send({ success: false, message: err.message || "Unable to add assignment" });
@@ -370,10 +429,10 @@ export async function delete_topic_assignment(req, reply) {
 
 export async function add_topic_quiz(req, reply) {
   try {
-    const { topic_id } = req.params;
+    const { progress_id } = req.params;
     const { title, generated_by_ai, file_url } = req.body;
 
-    const quiz = await addTopicQuiz(topic_id, {
+    const quiz = await addTopicQuiz(progress_id, {
       title,
       generatedByAi: generated_by_ai ?? false,
       fileUrl: file_url,
@@ -382,7 +441,7 @@ export async function add_topic_quiz(req, reply) {
     reply.code(201).send({ success: true, message: "Quiz added", data: quiz });
   } catch (err) {
     if (err.code === "P2003") {
-      return reply.code(404).send({ success: false, message: "Topic not found" });
+      return reply.code(404).send({ success: false, message: "Progress not found" });
     }
     console.error(err);
     reply.code(500).send({ success: false, message: err.message || "Unable to add quiz" });

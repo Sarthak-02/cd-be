@@ -108,6 +108,13 @@ enum PickupSource {
   MANUAL
 }
 
+enum AdmissionStatus {
+  pending
+  approved
+  rejected
+  enrolled
+}
+
 enum LessonPlanStatus {
   PLANNED
   COMPLETED
@@ -207,6 +214,8 @@ model Campus {
   teachers Teacher[]
   lessonPlans LessonPlan[]
   classPlans  ClassPlan[]
+  campusTierPermissions CampusTierPermission[]
+  admissions Admission[]
 
   @@index([school_id])
 }
@@ -233,6 +242,7 @@ model Class {
 
   sections Section[]
   lessonPlans LessonPlan[]
+  classPlans  ClassPlan[]
 
   @@index([campus_id])
 }
@@ -254,6 +264,7 @@ model Section {
   attendanceSessions AttendanceSession[]
   students           Student[]
   lessonPlans        LessonPlan[]
+  topicProgress      ClassPlanTopicProgress[]
 
   @@index([class_id])
 }
@@ -271,8 +282,8 @@ model Student {
   student_dob            DateTime
   student_current_status StudentStatus
 
-  student_section_id String
-  section    Section @relation(fields: [student_section_id], references: [section_id], onDelete: Cascade)
+  student_section_id String?
+  section    Section? @relation(fields: [student_section_id], references: [section_id], onDelete: SetNull)
 
   extras Json?
 
@@ -826,7 +837,9 @@ model ClassPlan {
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [teacher_id])
 
-  sectionId    String
+  classId String
+  classRef Class @relation(fields: [classId], references: [class_id])
+
   subject      String
   academicYear String
   isPublished  Boolean @default(false)
@@ -836,7 +849,7 @@ model ClassPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([teacherId, campusId, sectionId, subject, academicYear])
+  @@unique([teacherId, campusId, classId, subject, academicYear])
   @@index([campusId, academicYear])
   @@index([teacherId])
 }
@@ -846,10 +859,27 @@ model ClassPlanTopic {
   classPlanId String
   classPlan   ClassPlan @relation(fields: [classPlanId], references: [id], onDelete: Cascade)
 
-  chapterTitle       String
-  chapterNumber      Int?
-  title              String
-  displayOrder       Float
+  chapterTitle  String
+  chapterNumber Int?
+  title         String
+  displayOrder  Float
+
+  progress ClassPlanTopicProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([classPlanId, chapterNumber, displayOrder])
+}
+
+model ClassPlanTopicProgress {
+  id      String         @id @default(uuid())
+  topicId String
+  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  sectionId String
+  section   Section @relation(fields: [sectionId], references: [section_id])
+
   status             ClassPlanTopicStatus @default(PENDING)
   scheduledDate      DateTime?            @db.Date
   completedOn        DateTime?            @db.Date
@@ -864,50 +894,52 @@ model ClassPlanTopic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([classPlanId, chapterNumber, displayOrder])
+  @@unique([topicId, sectionId])
+  @@index([topicId])
+  @@index([sectionId])
 }
 
 model TopicMaterial {
-  id           String         @id @default(uuid())
-  topicId      String
-  topic        ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
-  fileName   String
-  fileUrl    String
+  fileName  String
+  fileUrl   String
 
   createdAt DateTime @default(now())
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model TopicAssignment {
-  id      String         @id @default(uuid())
-  topicId String
-  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
   title   String
-  dueDate DateTime?              @db.Date
+  dueDate DateTime?             @db.Date
   fileUrl String?
-  status  TopicAssignmentStatus  @default(DRAFT)
+  status  TopicAssignmentStatus @default(DRAFT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model TopicQuiz {
-  id      String         @id @default(uuid())
-  topicId String
-  topic   ClassPlanTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  id         String                 @id @default(uuid())
+  progressId String
+  progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
-  title          String
-  generatedByAi  Boolean @default(false)
-  fileUrl        String?
+  title         String
+  generatedByAi Boolean @default(false)
+  fileUrl       String?
 
   createdAt DateTime @default(now())
 
-  @@index([topicId])
+  @@index([progressId])
 }
 
 model Scholarship {
@@ -1030,6 +1062,48 @@ model ReportDashboardConfig {
 // ────────────────────────────────────────────────────────────────────────────
 
 /// Teacher-confirmed record of a student being picked up
+model CampusTierPermission {
+  campus_id  String
+  tier       String
+  role       String   @default("") // 'student' | 'staff'
+  feature_id String
+  enabled    Boolean  @default(false)
+  class_ids  String[] @default([])
+  updated_at DateTime @default(now()) @updatedAt
+
+  campus Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  @@id([campus_id, tier, role, feature_id])
+  @@index([campus_id, tier, role])
+  @@index([campus_id])
+}
+
+model Admission {
+  admission_id               String          @id @default(uuid())
+  admission_application_no   String
+  admission_academic_year    String
+  admission_date             DateTime
+  admission_applied_class_id String
+  admission_status           AdmissionStatus @default(pending)
+  admission_first_name       String
+  admission_middle_name      String?
+  admission_last_name        String?
+  admission_gender           Gender
+  admission_dob              DateTime
+
+  extras Json?
+
+  campus_id String
+  campus    Campus @relation(fields: [campus_id], references: [campus_id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campus_id, admission_application_no])
+  @@index([campus_id])
+  @@index([admission_status])
+}
+
 model PickupLog {
   id        String  @id @default(uuid())
   studentId String

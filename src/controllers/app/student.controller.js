@@ -1,4 +1,38 @@
-import { getActiveStudentsBySection } from "../../db/student.db.js";
+import { getActiveStudentsBySection, getStudentPermissions } from "../../db/student.db.js";
+
+export async function student_permissions_get(req, reply) {
+  try {
+    const { student_id } = req.query;
+
+    if (!student_id) {
+      return reply.code(400).send({
+        success: false,
+        message: "student_id is required",
+      });
+    }
+
+    const result = await getStudentPermissions(student_id);
+
+    if (result === null) {
+      return reply.code(404).send({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    reply.send({
+      success: true,
+      message: "Student permissions fetched successfully",
+      data: result,
+    });
+  } catch (err) {
+    console.log(err);
+    reply.code(500).send({
+      success: false,
+      message: "Unable to fetch student permissions",
+    });
+  }
+}
 
 export async function students_by_section_get(req, reply) {
   try {

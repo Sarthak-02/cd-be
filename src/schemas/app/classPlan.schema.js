@@ -8,12 +8,6 @@ const topicCreateSchema = {
     chapter_number: { type: "integer", minimum: 1 },
     title: { type: "string", minLength: 1 },
     display_order: { type: "number" },
-    status: { type: "string", enum: topicStatusEnum, default: "PENDING" },
-    scheduled_date: { type: "string", format: "date" },
-    completed_on: { type: "string", format: "date" },
-    actual_duration_mins: { type: "integer", minimum: 0 },
-    teacher_notes: { type: "string" },
-    is_added_by_teacher: { type: "boolean", default: false },
   },
 };
 
@@ -25,6 +19,27 @@ const topicUpdateSchema = {
     chapter_number: { type: ["integer", "null"], minimum: 1 },
     title: { type: "string", minLength: 1 },
     display_order: { type: "number" },
+  },
+};
+
+const progressCreateSchema = {
+  type: "object",
+  required: ["section_id"],
+  properties: {
+    section_id: { type: "string", minLength: 1, description: "Section this progress entry belongs to" },
+    status: { type: "string", enum: topicStatusEnum, default: "PENDING" },
+    scheduled_date: { type: "string", format: "date" },
+    completed_on: { type: "string", format: "date" },
+    actual_duration_mins: { type: "integer", minimum: 0 },
+    teacher_notes: { type: "string" },
+    is_added_by_teacher: { type: "boolean", default: false },
+  },
+};
+
+const progressUpdateSchema = {
+  type: "object",
+  minProperties: 1,
+  properties: {
     status: { type: "string", enum: topicStatusEnum },
     scheduled_date: { type: ["string", "null"], format: "date" },
     completed_on: { type: ["string", "null"], format: "date" },
@@ -40,11 +55,11 @@ export const ClassPlanSeedFromMasterSchema = {
   tags: ["Class Plans"],
   body: {
     type: "object",
-    required: ["board", "subject", "section_id", "academic_year", "campus_id", "teacher_id"],
+    required: ["board", "subject", "class_id", "academic_year", "campus_id", "teacher_id"],
     properties: {
       board: { type: "string", minLength: 1, description: "e.g. CBSE, ICSE" },
       subject: { type: "string", minLength: 1 },
-      section_id: { type: "string", minLength: 1 },
+      class_id: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1, description: "e.g. 2025-26" },
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
@@ -59,12 +74,12 @@ export const ClassPlanCreateSchema = {
   tags: ["Class Plans"],
   body: {
     type: "object",
-    required: ["campus_id", "teacher_id", "section_id", "subject", "academic_year"],
+    required: ["campus_id", "teacher_id", "class_id", "subject", "academic_year"],
     properties: {
       master_plan_id: { type: "string", description: "Optional — seed from a MasterLessonPlan" },
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
-      section_id: { type: "string", minLength: 1 },
+      class_id: { type: "string", minLength: 1 },
       subject: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1, description: "e.g. 2025-26" },
       is_published: { type: "boolean", default: false },
@@ -82,6 +97,12 @@ export const ClassPlanGetByIdSchema = {
       class_plan_id: { type: "string" },
     },
   },
+  querystring: {
+    type: "object",
+    properties: {
+      section_id: { type: "string", description: "Filter topic progress to this section" },
+    },
+  },
 };
 
 export const ClassPlanListSchema = {
@@ -91,7 +112,8 @@ export const ClassPlanListSchema = {
     properties: {
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
-      section_id: { type: "string" },
+      section_id: { type: "string", description: "Resolves to classId and filters progress to this section" },
+      class_id: { type: "string" },
       subject: { type: "string" },
       academic_year: { type: "string" },
       is_published: { type: "boolean" },
@@ -115,7 +137,7 @@ export const ClassPlanUpdateSchema = {
     minProperties: 1,
     properties: {
       master_plan_id: { type: ["string", "null"] },
-      section_id: { type: "string", minLength: 1 },
+      class_id: { type: "string", minLength: 1 },
       subject: { type: "string", minLength: 1 },
       academic_year: { type: "string", minLength: 1 },
       is_published: { type: "boolean" },
@@ -162,19 +184,50 @@ export const ClassPlanTopicDeleteSchema = {
   },
 };
 
+// ─── Topic Progress ───────────────────────────────────────────────────────────
+
+export const ClassPlanTopicProgressCreateSchema = {
+  tags: ["Class Plans"],
+  params: {
+    type: "object",
+    required: ["topic_id"],
+    properties: { topic_id: { type: "string" } },
+  },
+  body: progressCreateSchema,
+};
+
+export const ClassPlanTopicProgressUpdateSchema = {
+  tags: ["Class Plans"],
+  params: {
+    type: "object",
+    required: ["progress_id"],
+    properties: { progress_id: { type: "string" } },
+  },
+  body: progressUpdateSchema,
+};
+
+export const ClassPlanTopicProgressDeleteSchema = {
+  tags: ["Class Plans"],
+  params: {
+    type: "object",
+    required: ["progress_id"],
+    properties: { progress_id: { type: "string" } },
+  },
+};
+
 const assignmentStatusEnum = ["DRAFT", "PUBLISHED", "CLOSED"];
 
-const topicIdParam = {
+const progressIdParam = {
   type: "object",
-  required: ["topic_id"],
-  properties: { topic_id: { type: "string" } },
+  required: ["progress_id"],
+  properties: { progress_id: { type: "string" } },
 };
 
 // ─── Materials ────────────────────────────────────────────────────────────────
 
 export const TopicMaterialAddSchema = {
   tags: ["Class Plans"],
-  params: topicIdParam,
+  params: progressIdParam,
   body: {
     type: "object",
     required: ["file_name", "file_url"],
@@ -198,7 +251,7 @@ export const TopicMaterialDeleteSchema = {
 
 export const TopicAssignmentAddSchema = {
   tags: ["Class Plans"],
-  params: topicIdParam,
+  params: progressIdParam,
   body: {
     type: "object",
     required: ["title"],
@@ -243,7 +296,7 @@ export const TopicAssignmentDeleteSchema = {
 
 export const TopicQuizAddSchema = {
   tags: ["Class Plans"],
-  params: topicIdParam,
+  params: progressIdParam,
   body: {
     type: "object",
     required: ["title"],

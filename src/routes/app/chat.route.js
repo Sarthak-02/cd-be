@@ -5,12 +5,14 @@ import {
   listMessagesController,
   sendMessageController,
   markConversationReadController,
+  broadcastMessageController,
 } from "../../controllers/app/chat.controller.js";
 import {
   CreateConversationSchema,
   GetConversationSchema,
   ListMessagesSchema,
   SendMessageSchema,
+  BroadcastMessageSchema,
 } from "../../schemas/app/chat.schema.js";
 
 const createConversationOpts = {
@@ -39,6 +41,10 @@ const markReadOpts = {
   schema: { params: GetConversationSchema.params },
 };
 
+const broadcastMessageOpts = {
+  schema: { body: BroadcastMessageSchema.body },
+};
+
 async function chatRoutes(app) {
   app.post("/chat/conversations", createConversationOpts, createConversationController);
   app.get("/chat/conversations", listConversationsController);
@@ -54,6 +60,7 @@ async function chatRoutes(app) {
     markReadOpts,
     markConversationReadController
   );
+  app.post("/chat/broadcast", broadcastMessageOpts, broadcastMessageController);
 }
 
 export default chatRoutes;
