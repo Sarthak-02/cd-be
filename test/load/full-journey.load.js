@@ -4,23 +4,25 @@
  *   2. Get today's attendance schedule
  *   3. Submit bulk attendance
  *   4. Check notifications
- *   5. List homework
- *   6. List upcoming exams
- *   7. Logout
- *
- * This is the most representative test for overall system health.
+ *   5. List homework (by teacher)
+ *   6. List upcoming exams (by section)
+ *   7. List lesson plans
+ *   8. Check exam grades
+ *   9. Logout
  *
  * Run:
  *   k6 run \
  *     -e TEST_SECTION_ID=<id> \
  *     -e TEST_TEACHER_ID=<id> \
+ *     -e TEST_CLASS_ID=<id> \
  *     -e TEST_STUDENT_IDS=id1,id2,id3 \
+ *     -e TEST_EXAM_ID=<id> \
  *     test/load/full-journey.load.js
  */
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
-import { BASE_URL, TEST_CREDENTIALS, DEFAULT_THRESHOLDS, SCENARIOS } from './config.js';
+import { BASE_URL, TEST_CREDENTIALS, DEFAULT_THRESHOLDS, SCENARIOS, TEST_IDS } from './config.js';
 
 const scenario = __ENV.SCENARIO || 'load';
 
@@ -28,8 +30,8 @@ export const options = {
   scenarios: { default: SCENARIOS[scenario] },
   thresholds: {
     ...DEFAULT_THRESHOLDS,
-    'http_req_duration{name:login}':          ['p(95)<1500'],
-    'http_req_duration{name:bulk_create}':    ['p(95)<3000'],
+    'http_req_duration{name:login}':             ['p(95)<1500'],
+    'http_req_duration{name:bulk_create}':       ['p(95)<3000'],
     'http_req_duration{name:get_notifications}': ['p(95)<1000'],
     journey_duration: ['p(95)<15000'],
   },
@@ -37,9 +39,11 @@ export const options = {
 
 const journeyDuration = new Trend('journey_duration');
 
-const SECTION_ID  = __ENV.TEST_SECTION_ID  || 'section_001';
-const TEACHER_ID  = __ENV.TEST_TEACHER_ID  || 'teacher_001';
-const STUDENT_IDS = (__ENV.TEST_STUDENT_IDS || 'student_001,student_002,student_003').split(',');
+const SECTION_ID  = __ENV.TEST_SECTION_ID  || TEST_IDS.sectionId;
+const TEACHER_ID  = __ENV.TEST_TEACHER_ID  || TEST_IDS.teacherId;
+const CLASS_ID    = __ENV.TEST_CLASS_ID    || TEST_IDS.classId;
+const EXAM_ID     = __ENV.TEST_EXAM_ID     || TEST_IDS.examId;
+const STUDENT_IDS = (__ENV.TEST_STUDENT_IDS || TEST_IDS.studentIds.join(',')).split(',');
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -104,24 +108,42 @@ export default function () {
   });
 
   group('5. Homework list', () => {
+    // teacher_id is required by schema
     const res = http.get(
-      `${BASE_URL}/homework/teacher/all`,
+      `${BASE_URL}/homework/teacher/all?teacher_id=${TEACHER_ID}`,
       { headers: hdrs, tags: { name: 'hw_list' } }
     );
     check(res, { 'homework 200': (r) => r.status === 200 });
   });
 
   group('6. Upcoming exams', () => {
+    // target_type + target_id required by schema
     const res = http.get(
-      `${BASE_URL}/exam/upcoming`,
+      `${BASE_URL}/exam/upcoming?target_type=SECTION&target_id=${SECTION_ID}`,
       { headers: hdrs, tags: { name: 'exam_upcoming' } }
     );
     check(res, { 'exams 200': (r) => r.status === 200 });
   });
 
+  group('7. Lesson plans', () => {
+    const res = http.get(
+      `${BASE_URL}/lesson-plans?teacher_id=${TEACHER_ID}&class_id=${CLASS_ID}`,
+      { headers: hdrs, tags: { name: 'lesson_plans' } }
+    );
+    check(res, { 'lesson plans 200': (r) => r.status === 200 });
+  });
+
+  group('8. Exam grades', () => {
+    const res = http.get(
+      `${BASE_URL}/exam-grade/exam/${EXAM_ID}`,
+      { headers: hdrs, tags: { name: 'exam_grades' } }
+    );
+    check(res, { 'exam grades 200': (r) => r.status === 200 });
+  });
+
   sleep(0.5);
 
-  group('7. Logout', () => {
+  group('9. Logout', () => {
     const res = http.post(
       `${BASE_URL}/logout`,
       null,
