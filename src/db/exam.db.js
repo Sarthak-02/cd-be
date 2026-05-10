@@ -1116,6 +1116,23 @@ async function isStudentEligibleForExam(examId, studentId) {
 }
 
 /**
+ * Display label "ClassName (SectionName)" for roster / exports.
+ * @param {{ section?: { section_name?: string | null, classRef?: { class_name?: string | null } | null } | null }} student
+ */
+function formatStudentClassSectionLabel(student) {
+    const sec = student.section;
+    if (!sec) {
+        return "";
+    }
+    const className = sec.classRef?.class_name?.trim() ?? "";
+    const sectionName = sec.section_name?.trim() ?? "";
+    if (className && sectionName) {
+        return `${className} (${sectionName})`;
+    }
+    return className || sectionName || "";
+}
+
+/**
  * Get all students for an exam based on its targets
  */
 export async function getStudentsForExam(examId) {
@@ -1216,7 +1233,19 @@ export async function getStudentsForExam(examId) {
                 student_last_name: true,
                 student_roll_no: true,
                 student_photo_url: true,
-                student_admission_no: true
+                student_admission_no: true,
+                section: {
+                    select: {
+                        section_name: true,
+                        section_short_name: true,
+                        classRef: {
+                            select: {
+                                class_name: true,
+                                class_short_name: true
+                            }
+                        }
+                    }
+                }
             },
             orderBy: {
                 student_roll_no: "asc"
@@ -1233,7 +1262,9 @@ export async function getStudentsForExam(examId) {
             ].filter(Boolean).join(" "),
             student_roll_no: student.student_roll_no,
             student_photo_url: student.student_photo_url,
-            student_admission_no: student.student_admission_no
+            student_admission_no: student.student_admission_no,
+            class_section:
+                formatStudentClassSectionLabel(student)
         }));
     } catch (err) {
         console.error("Error fetching students for exam:", err);

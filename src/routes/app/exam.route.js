@@ -20,7 +20,9 @@ import {
     send_exam_reminder,
     get_students_for_exam,
     get_exam_grades,
-    get_exam_details_for_student
+    get_exam_details_for_student,
+    download_exam_grades_template,
+    upload_exam_grades_xlsx
 } from "../../controllers/app/exam.controller.js";
 
 import {
@@ -45,7 +47,9 @@ import {
     ExamSendReminderSchema,
     ExamGetStudentsSchema,
     ExamGetGradesSchema,
-    ExamGetDetailsForStudentSchema
+    ExamGetDetailsForStudentSchema,
+    ExamDownloadGradesTemplateSchema,
+    ExamUploadGradesXlsxSchema
 } from "../../schemas/app/exam.schema.js";
 
 const examCreateOpts = {
@@ -187,6 +191,18 @@ const examGetDetailsForStudentOpts = {
     }
 };
 
+const examDownloadGradesTemplateOpts = {
+    schema: {
+        params: ExamDownloadGradesTemplateSchema.params
+    }
+};
+
+const examUploadGradesXlsxOpts = {
+    schema: {
+        params: ExamUploadGradesXlsxSchema.params
+    }
+};
+
 async function examRoutes(app, options) {
     // Create exam
     app.post("/exam", examCreateOpts, create_exam);
@@ -225,6 +241,18 @@ async function examRoutes(app, options) {
 
     // Students
     app.get("/exam/:exam_id/students", examGetStudentsOpts, get_students_for_exam);
+
+    app.get(
+        "/exam/:exam_id/grades-template",
+        examDownloadGradesTemplateOpts,
+        download_exam_grades_template
+    );
+
+    app.post(
+        "/exam/:exam_id/grades-upload",
+        examUploadGradesXlsxOpts,
+        upload_exam_grades_xlsx
+    );
 
     // Grades
     app.get("/exam/grades/all", examGetGradesOpts, get_exam_grades);

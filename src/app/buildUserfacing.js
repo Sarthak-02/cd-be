@@ -1,4 +1,5 @@
 import cors from '@fastify/cors'
+import multipart from '@fastify/multipart'
 import dotenv from 'dotenv'
 import Fastify from 'fastify'
 import ajvCompiler from '@fastify/ajv-compiler'
@@ -59,6 +60,12 @@ export async function buildUserfacing() {
 
     await fastify.register(authHook)
     await fastify.register(prismaPlugin)
+
+    await fastify.register(multipart, {
+        limits: {
+            fileSize: 15 * 1024 * 1024
+        }
+    })
 
     return fastify
 }
