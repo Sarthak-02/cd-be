@@ -1,12 +1,13 @@
 import ExcelJS from "exceljs";
 import { prisma } from "../../prisma/prisma.js";
-import { getStudentsForExam } from "../../db/exam.db.js";
+import { getStudentsForExam, getClassIdsForExamTargets } from "../../db/exam.db.js";
 import { bulkUpsertExamGrades } from "../../db/examGrade.db.js";
 import {
     resolveCellValidation,
     validateGradeCellValue
 } from "./examGradesExcel.validation.js";
 import { buildExamGradesExcelBaseFilename } from "./examGradesExcel.filename.js";
+import { buildEffectiveGradingContext } from "./examGradesExcel.gradingContext.js";
 
 const UPLOAD_BATCH_SIZE = 250;
 
@@ -152,13 +153,37 @@ export async function processExamGradesUpload(examId, fileBuffer, options = {}) 
             id: true,
             examType: true,
             gradingType: true,
-            gradingExtras: true
+            gradingExtras: true,
+            campusId: true,
+            targets: { select: { targetType: true, targetId: true } }
         }
     });
 
     if (!exam) {
         return { ok: false, code: "NOT_FOUND", message: "Exam not found" };
     }
+
+    const campus = await prisma.campus.findUnique({
+        where: { campus_id: exam.campusId },
+        select: { extras: true }
+    });
+
+    const classIds = await getClassIdsForExamTargets(exam.targets);
+    const campusExtras = campus?.extras;
+    const classGradingRaw =
+        campusExtras != null && typeof campusExtras === "object"
+            ? /** @type {Record<string, unknown>} */ (campusExtras)
+                  .class_grading_config
+            : undefined;
+
+    const gradingContext = buildEffectiveGradingContext(
+        {
+            gradingType: exam.gradingType,
+            gradingExtras: exam.gradingExtras
+        },
+        classGradingRaw,
+        classIds
+    );
 
     const subjects = await prisma.examSubject.findMany({
         where: { examId },
@@ -431,7 +456,7 @@ export async function processExamGradesUpload(examId, fileBuffer, options = {}) 
 
         subjectByCol.forEach((subj, colIdx) => {
             const rawVal = rowVals[colIdx - 1] ?? "";
-            const spec = resolveCellValidation(exam, subj);
+            const spec = resolveCellValidation(gradingContext, subj);
             const vr = validateGradeCellValue(rawVal, spec);
             if (!vr.ok) {
                 rowReasons.push(`${subj.subjectName}: ${vr.reason}`);
@@ -453,7 +478,7 @@ export async function processExamGradesUpload(examId, fileBuffer, options = {}) 
 
         subjectByCol.forEach((subj, colIdx) => {
             const rawVal = rowVals[colIdx - 1] ?? "";
-            const spec = resolveCellValidation(exam, subj);
+            const spec = resolveCellValidation(gradingContext, subj);
             const vr = validateGradeCellValue(rawVal, spec);
             if (vr.ok && !vr.skipped && vr.normalized != null) {
                 upserts.push({

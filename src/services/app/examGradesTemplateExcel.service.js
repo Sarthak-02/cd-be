@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { prisma } from "../../prisma/prisma.js";
-import { getStudentsForExam } from "../../db/exam.db.js";
+import { getStudentsForExam, getClassIdsForExamTargets } from "../../db/exam.db.js";
 import {
     resolveCellValidation,
     columnLetter,
@@ -8,6 +8,7 @@ import {
     buildInlineListFormulae
 } from "./examGradesExcel.validation.js";
 import { buildExamGradesExcelBaseFilename } from "./examGradesExcel.filename.js";
+import { buildEffectiveGradingContext } from "./examGradesExcel.gradingContext.js";
 
 const VALIDATION_LAST_ROW = 5000;
 
@@ -24,13 +25,37 @@ export async function buildExamGradesTemplateXlsx(examId) {
             id: true,
             examType: true,
             gradingType: true,
-            gradingExtras: true
+            gradingExtras: true,
+            campusId: true,
+            targets: { select: { targetType: true, targetId: true } }
         }
     });
 
     if (!exam) {
         return { ok: false, code: "NOT_FOUND" };
     }
+
+    const campus = await prisma.campus.findUnique({
+        where: { campus_id: exam.campusId },
+        select: { extras: true }
+    });
+
+    const classIds = await getClassIdsForExamTargets(exam.targets);
+    const campusExtras = campus?.extras;
+    const classGradingRaw =
+        campusExtras != null && typeof campusExtras === "object"
+            ? /** @type {Record<string, unknown>} */ (campusExtras)
+                  .class_grading_config
+            : undefined;
+
+    const gradingContext = buildEffectiveGradingContext(
+        {
+            gradingType: exam.gradingType,
+            gradingExtras: exam.gradingExtras
+        },
+        classGradingRaw,
+        classIds
+    );
 
     const subjects = await prisma.examSubject.findMany({
         where: { examId },
@@ -142,7 +167,9 @@ export async function buildExamGradesTemplateXlsx(examId) {
         ]);
     }
 
-    const validations = subjects.map(sub => resolveCellValidation(exam, sub));
+    const validations = subjects.map(sub =>
+        resolveCellValidation(gradingContext, sub)
+    );
 
     for (let i = 0; i < subjects.length; i++) {
         const col = columnLetter(5 + i);

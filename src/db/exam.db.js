@@ -1133,6 +1133,58 @@ function formatStudentClassSectionLabel(student) {
 }
 
 /**
+ * Class IDs implied by exam targets (CLASS, SECTION → class, STUDENT → class via section).
+ * SCHOOL-wide targets add no class IDs — use campus `class_grading_config.default` in that case.
+ *
+ * @param {{ targetType: string, targetId: string | null }[]} targets
+ */
+export async function getClassIdsForExamTargets(targets) {
+    const classIds = new Set();
+    if (!targets?.length) {
+        return classIds;
+    }
+
+    const sectionIds = [];
+    const studentIds = [];
+
+    for (const t of targets) {
+        if (t.targetType === "CLASS" && t.targetId) {
+            classIds.add(t.targetId);
+        } else if (t.targetType === "SECTION" && t.targetId) {
+            sectionIds.push(t.targetId);
+        } else if (t.targetType === "STUDENT" && t.targetId) {
+            studentIds.push(t.targetId);
+        }
+    }
+
+    if (sectionIds.length > 0) {
+        const sections = await prisma.section.findMany({
+            where: { section_id: { in: sectionIds } },
+            select: { class_id: true }
+        });
+        for (const s of sections) {
+            classIds.add(s.class_id);
+        }
+    }
+
+    if (studentIds.length > 0) {
+        const students = await prisma.student.findMany({
+            where: { student_id: { in: studentIds } },
+            select: {
+                section: { select: { class_id: true } }
+            }
+        });
+        for (const st of students) {
+            if (st.section?.class_id) {
+                classIds.add(st.section.class_id);
+            }
+        }
+    }
+
+    return classIds;
+}
+
+/**
  * Get all students for an exam based on its targets
  */
 export async function getStudentsForExam(examId) {
