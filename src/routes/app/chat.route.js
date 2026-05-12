@@ -6,6 +6,7 @@ import {
   sendMessageController,
   markConversationReadController,
   broadcastMessageController,
+  generateChatAttachmentUploadUrlController,
 } from "../../controllers/app/chat.controller.js";
 import {
   CreateConversationSchema,
@@ -13,6 +14,7 @@ import {
   ListMessagesSchema,
   SendMessageSchema,
   BroadcastMessageSchema,
+  ChatAttachmentUploadUrlSchema,
 } from "../../schemas/app/chat.schema.js";
 
 const createConversationOpts = {
@@ -45,6 +47,10 @@ const broadcastMessageOpts = {
   schema: { body: BroadcastMessageSchema.body },
 };
 
+const chatAttachmentUploadUrlOpts = {
+  schema: { body: ChatAttachmentUploadUrlSchema.body },
+};
+
 async function chatRoutes(app) {
   app.post("/chat/conversations", createConversationOpts, createConversationController);
   app.get("/chat/conversations", listConversationsController);
@@ -61,6 +67,7 @@ async function chatRoutes(app) {
     markConversationReadController
   );
   app.post("/chat/broadcast", broadcastMessageOpts, broadcastMessageController);
+  app.post("/chat/attachments/upload-url", chatAttachmentUploadUrlOpts, generateChatAttachmentUploadUrlController);
 }
 
 export default chatRoutes;

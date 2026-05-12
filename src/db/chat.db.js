@@ -301,6 +301,7 @@ export async function listMessages(conversationId, { after, before, limit = 50 }
     where,
     orderBy: { createdAt: useAsc ? "asc" : "desc" },
     take,
+    include: { attachments: true },
   });
 
   if (!useAsc) {
@@ -309,10 +310,10 @@ export async function listMessages(conversationId, { after, before, limit = 50 }
   return messages;
 }
 
-export async function createChatMessage(conversationId, senderUserId, body) {
+export async function createChatMessage(conversationId, senderUserId, body, attachments = []) {
   const text = typeof body === "string" ? body.trim() : "";
-  if (!text) {
-    throw Object.assign(new Error("body is required"), { status: 400 });
+  if (!text && (!attachments || attachments.length === 0)) {
+    throw Object.assign(new Error("body or at least one attachment is required"), { status: 400 });
   }
 
   return prisma.$transaction(async (tx) => {
@@ -321,7 +322,18 @@ export async function createChatMessage(conversationId, senderUserId, body) {
         conversationId,
         senderUserId,
         body: text,
+        attachments: attachments?.length
+          ? {
+              create: attachments.map((a) => ({
+                fileUrl: a.file_url,
+                fileName: a.file_name,
+                fileType: a.file_type,
+                fileSize: a.file_size,
+              })),
+            }
+          : undefined,
       },
+      include: { attachments: true },
     });
     await tx.chatConversation.update({
       where: { id: conversationId },
@@ -345,13 +357,13 @@ export async function markConversationRead(conversationId, userId, readAt = new 
  * Finds or creates a DIRECT conversation for each recipient, then sends the message.
  * Returns arrays of succeeded and failed results.
  */
-export async function broadcastMessageToUsers(senderUserId, senderRole, recipientUserIds, body) {
+export async function broadcastMessageToUsers(senderUserId, senderRole, recipientUserIds, body, attachments = []) {
   const unique = [...new Set(recipientUserIds.filter((id) => id && id !== senderUserId))];
 
   const results = await Promise.allSettled(
     unique.map(async (recipientId) => {
       const conversation = await findOrCreateDirectConversation(senderUserId, senderRole, recipientId);
-      const msg = await createChatMessage(conversation.id, senderUserId, body);
+      const msg = await createChatMessage(conversation.id, senderUserId, body, attachments);
       return { recipient_user_id: recipientId, conversation_id: conversation.id, message_id: msg.id };
     })
   );
