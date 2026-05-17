@@ -47,25 +47,32 @@ export async function deleteTeacher(teacher_id) {
 }
 
 export async function getTeachersBySection({ campus_id, section_id }) {
-  return prisma.teacher.findMany({
-    where: {
-      campus_id,
-      teacher_status: "active",
-      extras: {
-        path: ["teacher_sections"],
-        array_contains: section_id,
-      },
-    },
+  // extras is encrypted so Postgres JSON path queries on it are unavailable.
+  // Fetch all active campus teachers and filter by teacher_sections in JS.
+  const teachers = await prisma.teacher.findMany({
+    where: { campus_id, teacher_status: "active" },
     select: {
       teacher_id: true,
       teacher_first_name: true,
       teacher_middle_name: true,
       teacher_last_name: true,
+      extras: true,
     },
-    orderBy: {
-      teacher_first_name: "asc",
-    },
+    orderBy: { teacher_first_name: "asc" },
   });
+
+  return teachers
+    .filter(
+      (t) =>
+        Array.isArray(t.extras?.teacher_sections) &&
+        t.extras.teacher_sections.includes(section_id),
+    )
+    .map(({ teacher_id, teacher_first_name, teacher_middle_name, teacher_last_name }) => ({
+      teacher_id,
+      teacher_first_name,
+      teacher_middle_name,
+      teacher_last_name,
+    }));
 }
 
 export async function getTeacherPermissions(teacher_id) {

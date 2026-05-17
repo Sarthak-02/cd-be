@@ -272,14 +272,15 @@ model Section {
 model Student {
   student_id String @id @default(uuid())
 
-  student_admission_no   String
+  student_admission_no   String          // stored encrypted; uniqueness via admission_no_hash
+  admission_no_hash      String?         // HMAC blind index — unique enforced by SQL partial index
   student_roll_no        String?
   student_photo_url      String?
-  student_first_name     String
-  student_middle_name    String?
-  student_last_name      String?
+  student_first_name     String          // encrypted
+  student_middle_name    String?         // encrypted
+  student_last_name      String?         // encrypted
   student_gender         Gender
-  student_dob            DateTime
+  student_dob            String          // encrypted; was DateTime, changed to String
   student_current_status StudentStatus
 
   student_section_id String?
@@ -300,8 +301,7 @@ model Student {
   authorizedPickupPersons AuthorizedPickupPerson[]
   pickupRequests          PickupRequest[]
   pickupLogs              PickupLog[]
-  
-  @@unique([campus_id, student_admission_no])
+
   @@index([campus_id])
   @@index([student_current_status])
   @@index([student_section_id, student_current_status])
@@ -310,9 +310,10 @@ model Student {
 model Parent {
   parent_id String @id @default(uuid())
 
-  name          String
-  phone         String?
-  email         String?
+  name          String          // encrypted
+  phone         String?         // encrypted; uniqueness via phone_hash
+  phone_hash    String?         // HMAC blind index — unique enforced by SQL partial index
+  email         String?         // encrypted
   relation_type String? // Father , Mother , Guardian etc
 
   student_id String
@@ -321,21 +322,23 @@ model Parent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([student_id, phone])
-  @@index([phone])
+  @@index([phone_hash])
 }
 
 model Teacher {
   teacher_id            String        @id @default(uuid())
-  teacher_employee_code String
-  teacher_first_name    String
-  teacher_middle_name   String?
-  teacher_last_name     String
+  teacher_employee_code String                  // encrypted; uniqueness via employee_code_hash
+  employee_code_hash    String?                 // HMAC blind index — unique enforced by SQL partial index
+  teacher_first_name    String                  // encrypted
+  teacher_middle_name   String?                 // encrypted
+  teacher_last_name     String                  // encrypted
   teacher_gender        Gender
-  teacher_dob           DateTime
+  teacher_dob           String                  // encrypted; was DateTime, changed to String
   teacher_photo_url     String?
-  teacher_email         String        @unique
-  teacher_phone         String?       @unique
+  teacher_email         String                  // encrypted; uniqueness via email_hash
+  email_hash            String?                 // HMAC blind index — unique enforced by SQL partial index
+  teacher_phone         String?                 // encrypted; uniqueness via phone_hash
+  phone_hash            String?                 // HMAC blind index — unique enforced by SQL partial index
   teacher_status        TeacherStatus
   extras                Json?
 
@@ -353,7 +356,6 @@ model Teacher {
   classPlans         ClassPlan[]
   pickupLogs         PickupLog[]
 
-  @@unique([campus_id, teacher_employee_code])
   @@index([campus_id])
 }
 
