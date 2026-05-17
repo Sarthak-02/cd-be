@@ -12,7 +12,7 @@ const storage = new Storage({
     },
 });
 
-const PROFILE_BUCKET_NAME = process.env.PROFILE_BUCKET_NAME;
+const PROFILE_BUCKET_NAME = process.env.DOCUMENT_BUCKET_NAME;
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const EXTENSION_MAP = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };

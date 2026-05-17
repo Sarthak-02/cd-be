@@ -59,7 +59,21 @@ export const SendMessageSchema = {
   }),
   body: Type.Object(
     {
-      body: Type.String({ minLength: 1, maxLength: 20000 }),
+      body: Type.Optional(Type.String({ maxLength: 20000 })),
+      attachments: Type.Optional(
+        Type.Array(
+          Type.Object(
+            {
+              file_url: Type.String({ minLength: 1 }),
+              file_name: Type.String({ minLength: 1 }),
+              file_type: Type.String({ minLength: 1 }),
+              file_size: Type.Integer({ minimum: 0 }),
+            },
+            { additionalProperties: false }
+          ),
+          { maxItems: 10 }
+        )
+      ),
     },
     { additionalProperties: false }
   ),
@@ -69,7 +83,51 @@ export const BroadcastMessageSchema = {
   body: Type.Object(
     {
       recipient_user_ids: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 500 }),
-      body: Type.String({ minLength: 1, maxLength: 20000 }),
+      body: Type.Optional(Type.String({ maxLength: 20000 })),
+      attachments: Type.Optional(
+        Type.Array(
+          Type.Object(
+            {
+              file_url: Type.String({ minLength: 1 }),
+              file_name: Type.String({ minLength: 1 }),
+              file_type: Type.String({ minLength: 1 }),
+              file_size: Type.Integer({ minimum: 0 }),
+            },
+            { additionalProperties: false }
+          ),
+          { maxItems: 10 }
+        )
+      ),
+    },
+    { additionalProperties: false }
+  ),
+};
+
+const CHAT_ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/tiff",
+  "image/bmp",
+  "image/ico",
+];
+
+export const ChatAttachmentUploadUrlSchema = {
+  body: Type.Object(
+    {
+      file_name: Type.String({ minLength: 1 }),
+      mime_type: Type.Union(CHAT_ALLOWED_MIME_TYPES.map((t) => Type.Literal(t))),
+      campus_id: Type.Optional(Type.String()),
     },
     { additionalProperties: false }
   ),

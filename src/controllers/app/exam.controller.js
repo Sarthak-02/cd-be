@@ -21,6 +21,8 @@ import {
     getExamDetailsForStudent
 } from "../../db/exam.db.js";
 import { publishExamAndNotify, notifyExamUpdate, sendExamReminder } from "../../services/app/examNotify.service.js";
+import { buildExamGradesTemplateXlsx } from "../../services/app/examGradesTemplateExcel.service.js";
+import { processExamGradesUpload } from "../../services/app/examGradesUploadExcel.service.js";
 
 /**
  * Create new exam
@@ -888,6 +890,136 @@ export async function get_exam_grades(req, reply) {
 /**
  * Get exam details with grades for a specific student
  */
+/**
+ * Download Excel template for bulk grade entry (student × subjects).
+ */
+/**
+ * Accept multipart upload: field `file` (.xlsx). Optional field `graded_by` (teacher id).
+ * On row validation failure returns 422 with an Excel file (failed rows in red, Reason column).
+ */
+export async function upload_exam_grades_xlsx(req, reply) {
+    try {
+        const { exam_id } = req.params;
+
+        let fileBuffer = /** @type {Buffer | null} */ (null);
+        let gradedBy = /** @type {string | null} */ (null);
+
+        const parts = req.parts();
+        for await (const part of parts) {
+            if (part.type === "file") {
+                fileBuffer = await part.toBuffer();
+            } else if (part.fieldname === "graded_by") {
+                const v = part.value;
+                gradedBy =
+                    v != null && String(v).trim() !== ""
+                        ? String(v).trim()
+                        : null;
+            }
+        }
+
+        if (!fileBuffer || fileBuffer.length === 0) {
+            return reply.code(400).send({
+                success: false,
+                message:
+                    'Multipart field "file" with the Excel workbook is required'
+            });
+        }
+
+        const result = await processExamGradesUpload(exam_id, fileBuffer, {
+            gradedBy
+        });
+
+        if (!result.ok) {
+            if (result.code === "ROW_ERRORS") {
+                reply
+                    .code(422)
+                    .header(
+                        "Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                    .header(
+                        "Content-Disposition",
+                        `attachment; filename="${result.filename}"`
+                    )
+                    .header(
+                        "X-Upload-Error-Rows",
+                        String(result.errorRowCount ?? 0)
+                    );
+                return reply.send(result.buffer);
+            }
+
+            const status =
+                result.code === "NOT_FOUND"
+                    ? 404
+                    : result.code === "NO_SUBJECTS"
+                      ? 400
+                      : 400;
+
+            return reply.code(status).send({
+                success: false,
+                message: result.message ?? "Upload failed",
+                code: result.code
+            });
+        }
+
+        return reply.send({
+            success: true,
+            message: "Grades imported successfully",
+            data: {
+                exam_id: result.exam_id,
+                grades_saved: result.grades_saved,
+                rows_processed: result.rows_processed
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: err.message || "Unable to process grades upload"
+        });
+    }
+}
+
+export async function download_exam_grades_template(req, reply) {
+    try {
+        const { exam_id } = req.params;
+        const result = await buildExamGradesTemplateXlsx(exam_id);
+
+        if (!result.ok) {
+            if (result.code === "NOT_FOUND") {
+                return reply.code(404).send({
+                    success: false,
+                    message: "Exam not found"
+                });
+            }
+            if (result.code === "NO_SUBJECTS") {
+                return reply.code(400).send({
+                    success: false,
+                    message: "Exam has no subjects to grade"
+                });
+            }
+        }
+
+        reply
+            .header(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            .header(
+                "Content-Disposition",
+                `attachment; filename="${result.filename}"`
+            );
+
+        return reply.send(result.buffer);
+    } catch (err) {
+        console.error(err);
+        reply.code(500).send({
+            success: false,
+            message: "Unable to generate grades template"
+        });
+    }
+}
+
 export async function get_exam_details_for_student(req, reply) {
     try {
         const { exam_id, student_id } = req.query;

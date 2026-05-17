@@ -55,12 +55,11 @@ export const ClassPlanSeedFromMasterSchema = {
   tags: ["Class Plans"],
   body: {
     type: "object",
-    required: ["board", "subject", "class_id", "academic_year", "campus_id", "teacher_id"],
+    required: ["board", "subject", "class_name", "campus_id", "teacher_id"],
     properties: {
       board: { type: "string", minLength: 1, description: "e.g. CBSE, ICSE" },
       subject: { type: "string", minLength: 1 },
-      class_id: { type: "string", minLength: 1 },
-      academic_year: { type: "string", minLength: 1, description: "e.g. 2025-26" },
+      class_name: { type: "string", minLength: 1, description: "e.g. Class 5, Grade 10" },
       campus_id: { type: "string" },
       teacher_id: { type: "string" },
       is_published: { type: "boolean", default: false },

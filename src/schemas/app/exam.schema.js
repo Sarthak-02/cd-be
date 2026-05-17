@@ -670,6 +670,34 @@ export const ExamGetStudentsSchema = {
     }
 };
 
+export const ExamDownloadGradesTemplateSchema = {
+    tags: ["Exam"],
+    params: {
+        type: "object",
+        required: ["exam_id"],
+        properties: {
+            exam_id: {
+                type: "string",
+                description: "Exam ID for the grades Excel template"
+            }
+        }
+    }
+};
+
+export const ExamUploadGradesXlsxSchema = {
+    tags: ["Exam"],
+    params: {
+        type: "object",
+        required: ["exam_id"],
+        properties: {
+            exam_id: {
+                type: "string",
+                description: "Exam ID for grades Excel upload"
+            }
+        }
+    }
+};
+
 export const ExamGetGradesSchema = {
     tags: ["Exam"],
     querystring: {

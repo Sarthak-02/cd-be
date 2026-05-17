@@ -1,0 +1,216 @@
+import { parseMaxGradePossibleFromGradingExtras } from "../../db/studentReport.db.js";
+
+const MAX_FREE_TEXT_LEN = 512;
+
+/**
+ * @param {unknown} extras
+ * @returns {string[] | null}
+ */
+export function parseAllowedGradesList(extras) {
+    if (extras == null || typeof extras !== "object") {
+        return null;
+    }
+    const keys = [
+        "allowed_grades",
+        "grade_scale",
+        "grades",
+        "letter_grades",
+        "grade_options",
+        "grade_level",
+        "grade_levels",
+        "grade_values",
+        "levels",
+        "scale",
+        "values",
+        "options"
+    ];
+    for (const k of keys) {
+        const v = /** @type {Record<string, unknown>} */ (extras)[k];
+        if (Array.isArray(v) && v.length > 0) {
+            const out = v
+                .map(x => String(x).trim())
+                .filter(Boolean);
+            if (out.length > 0) {
+                return [...new Set(out)];
+            }
+        }
+    }
+    return null;
+}
+
+const DEFAULT_LETTER_GRADES = ["O", "A+", "A", "B+", "B", "C+", "C", "D", "E", "F"];
+
+/**
+ * Try to extract a decimal range from strings like "0-10", "0 to 100", "1-100".
+ * @param {string} gt
+ * @returns {{ min: number, max: number } | null}
+ */
+function parseNumericRangeFromGradingType(gt) {
+    const m = gt.match(/\b(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)\b/i);
+    if (!m) return null;
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null;
+    return { min: a, max: b };
+}
+
+/**
+ * @param {{ gradingType: string | null, gradingExtras: unknown }} gradingContext — merged campus class_grading_config + exam grading fields
+ * @param {{ extras: unknown }} subject
+ * @returns {{ kind: 'list', values: string[] } | { kind: 'decimal', min: number, max: number } | { kind: 'none' }}
+ */
+export function resolveCellValidation(gradingContext, subject) {
+    const listFromSubject = parseAllowedGradesList(subject.extras);
+    const listFromExam = parseAllowedGradesList(gradingContext.gradingExtras);
+    const list = listFromSubject ?? listFromExam;
+    if (list && list.length > 0) {
+        return { kind: "list", values: list };
+    }
+
+    const gt = (gradingContext.gradingType || "").toLowerCase();
+    if (gt.includes("pass/fail")) {
+        return { kind: "list", values: ["Pass", "Fail"] };
+    }
+    if (gt.includes("pass") && gt.includes("fail")) {
+        return { kind: "list", values: ["Pass", "Fail"] };
+    }
+
+    // Letter grade systems — use DEFAULT_LETTER_GRADES as fallback if no extras
+    if (/\b(letter|grade level|grade scale|letter grade)\b/i.test(gradingContext.gradingType || "")) {
+        return { kind: "list", values: DEFAULT_LETTER_GRADES };
+    }
+
+    const maxSub = parseMaxGradePossibleFromGradingExtras(subject.extras);
+    const maxExam = parseMaxGradePossibleFromGradingExtras(
+        gradingContext.gradingExtras
+    );
+    const max = maxSub ?? maxExam;
+
+    if (max != null) {
+        return { kind: "decimal", min: 0, max };
+    }
+
+    if (/\b(percent|marks|score|numeric|points)\b/i.test(gradingContext.gradingType || "")) {
+        return { kind: "decimal", min: 0, max: 100 };
+    }
+
+    // CGPA (Indian 10-point scale) / GPA (4-point US scale)
+    if (/\bcgpa\b/i.test(gradingContext.gradingType || "")) {
+        return { kind: "decimal", min: 0, max: 10 };
+    }
+    if (/\bgpa\b/i.test(gradingContext.gradingType || "")) {
+        return { kind: "decimal", min: 0, max: 4 };
+    }
+
+    // Inline numeric range pattern, e.g. "0-10", "0-50", "1 to 100"
+    const rangeFromType = parseNumericRangeFromGradingType(
+        gradingContext.gradingType || ""
+    );
+    if (rangeFromType) {
+        return { kind: "decimal", min: rangeFromType.min, max: rangeFromType.max };
+    }
+
+    // Generic "grade" keyword fallback — use standard letter grades
+    if (/\bgrade\b/i.test(gradingContext.gradingType || "")) {
+        return { kind: "list", values: DEFAULT_LETTER_GRADES };
+    }
+
+    return { kind: "none" };
+}
+
+/**
+ * @param {number} colIndex1Based
+ */
+export function columnLetter(colIndex1Based) {
+    let n = colIndex1Based;
+    let s = "";
+    while (n > 0) {
+        const r = (n - 1) % 26;
+        s = String.fromCharCode(65 + r) + s;
+        n = Math.floor((n - 1) / 26);
+    }
+    return s;
+}
+
+/**
+ * @param {string[]} values
+ */
+export function listNeedsHelperSheet(values) {
+    const joined = values.join(",");
+    if (joined.length > 220) {
+        return true;
+    }
+    return values.some(v => String(v).includes(","));
+}
+
+/**
+ * @param {string[]} values
+ */
+export function buildInlineListFormulae(values) {
+    const inner = values
+        .map(v => String(v).trim().replace(/"/g, '""'))
+        .join(",");
+    return [`"${inner}"`];
+}
+
+/**
+ * @param {string | number | null | undefined} raw
+ * @param {{ kind: 'list', values: string[] } | { kind: 'decimal', min: number, max: number } | { kind: 'none' }} spec
+ * @returns {{ ok: true, skipped?: true, normalized?: string } | { ok: false, reason: string }}
+ */
+export function validateGradeCellValue(raw, spec) {
+    const s =
+        raw == null
+            ? ""
+            : typeof raw === "number"
+              ? String(raw)
+              : String(raw).trim();
+
+    if (s === "") {
+        return { ok: true, skipped: true };
+    }
+
+    if (spec.kind === "none") {
+        if (s.length > MAX_FREE_TEXT_LEN) {
+            return {
+                ok: false,
+                reason: `Value must be at most ${MAX_FREE_TEXT_LEN} characters`
+            };
+        }
+        return { ok: true, normalized: s };
+    }
+
+    if (spec.kind === "list") {
+        const lower = s.toLowerCase();
+        const hit = spec.values.find(
+            v => v.trim().toLowerCase() === lower
+        );
+        if (!hit) {
+            return {
+                ok: false,
+                reason: `Must be one of: ${spec.values.join(", ")}`
+            };
+        }
+        return { ok: true, normalized: hit };
+    }
+
+    if (spec.kind === "decimal") {
+        const normalizedNum = s.replace(",", ".");
+        const n = Number(normalizedNum);
+        if (!Number.isFinite(n)) {
+            return {
+                ok: false,
+                reason: `Must be a number between ${spec.min} and ${spec.max}`
+            };
+        }
+        if (n < spec.min || n > spec.max) {
+            return {
+                ok: false,
+                reason: `Must be between ${spec.min} and ${spec.max} (received ${n})`
+            };
+        }
+        return { ok: true, normalized: s.trim() };
+    }
+
+    return { ok: true, normalized: s };
+}

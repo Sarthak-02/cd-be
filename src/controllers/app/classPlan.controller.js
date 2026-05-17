@@ -24,13 +24,12 @@ import {
 
 export async function seed_class_plan_from_master(req, reply) {
   try {
-    const { board, subject, class_id, academic_year, campus_id, teacher_id, is_published = false } = req.body;
+    const { board, subject, class_name, campus_id, teacher_id, is_published = false } = req.body;
 
     const result = await seedClassPlanFromMaster({
       board,
       subject,
-      classId: class_id,
-      academicYear: academic_year,
+      className: class_name,
       campusId: campus_id,
       teacherId: teacher_id,
       isPublished: is_published,
@@ -45,7 +44,7 @@ export async function seed_class_plan_from_master(req, reply) {
     if (err.code === "P2002") {
       return reply.code(409).send({
         success: false,
-        message: "A class plan for this teacher, campus, class, subject, and academic year already exists",
+        message: "A class plan for this teacher, campus, class, and subject already exists",
       });
     }
     console.error(err);

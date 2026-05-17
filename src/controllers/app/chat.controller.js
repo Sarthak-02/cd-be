@@ -12,6 +12,7 @@ import {
   resolveParticipantDisplayNames,
   broadcastMessageToUsers,
 } from "../../db/chat.db.js";
+import { generateDocumentUploadSignedUrl } from "../../services/gcsSignedUrl.js";
 
 function formatMessage(m) {
   return {
@@ -20,6 +21,13 @@ function formatMessage(m) {
     sender_user_id: m.senderUserId,
     body: m.body,
     created_at: m.createdAt,
+    attachments: (m.attachments ?? []).map((a) => ({
+      id: a.id,
+      file_url: a.fileUrl,
+      file_name: a.fileName,
+      file_type: a.fileType,
+      file_size: a.fileSize,
+    })),
   };
 }
 
@@ -281,7 +289,7 @@ export async function sendMessageController(req, reply) {
       return reply.code(404).send({ success: false, error: "Conversation not found" });
     }
 
-    const msg = await createChatMessage(conversation_id, userInfo.userid, req.body.body);
+    const msg = await createChatMessage(conversation_id, userInfo.userid, req.body.body, req.body.attachments);
 
     return reply.code(201).send({
       success: true,
@@ -304,13 +312,14 @@ export async function broadcastMessageController(req, reply) {
       return reply.code(401).send({ success: false, error: "Unauthorized" });
     }
 
-    const { recipient_user_ids, body } = req.body;
+    const { recipient_user_ids, body, attachments } = req.body;
 
     const { succeeded, failed } = await broadcastMessageToUsers(
       userInfo.userid,
       userInfo.role,
       recipient_user_ids,
-      body
+      body,
+      attachments
     );
 
     return reply.code(207).send({
@@ -329,6 +338,41 @@ export async function broadcastMessageController(req, reply) {
     return reply.code(status).send({
       success: false,
       error: err.message || "Unable to broadcast message",
+    });
+  }
+}
+
+export async function generateChatAttachmentUploadUrlController(req, reply) {
+  try {
+    const userInfo = req.token_info;
+    if (!userInfo?.userid) {
+      return reply.code(401).send({ success: false, error: "Unauthorized" });
+    }
+
+    const { file_name, mime_type, campus_id } = req.body;
+
+    const result = await generateDocumentUploadSignedUrl({
+      entity: "chat_message",
+      entityId: userInfo.userid,
+      fileName: file_name,
+      mimeType: mime_type,
+      campus_id,
+    });
+
+    return reply.code(200).send({
+      success: true,
+      data: {
+        upload_url: result.uploadUrl,
+        public_url: result.publicUrl,
+        object_path: result.objectPath,
+      },
+    });
+  } catch (err) {
+    req.log.error(err);
+    const status = err.status || 500;
+    return reply.code(status).send({
+      success: false,
+      error: err.message || "Unable to generate upload URL",
     });
   }
 }

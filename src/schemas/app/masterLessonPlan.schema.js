@@ -3,7 +3,7 @@ const detailItemSchema = {
   required: ["chapter", "topics"],
   properties: {
     chapter: { type: "string", minLength: 1 },
-    topics: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
+    topics: { type: "array", minItems: 1, items: { type: "object", minLength: 1 } },
     month: { type: "string" },
     estimated_weeks: { type: "integer", minimum: 1 },
   },
