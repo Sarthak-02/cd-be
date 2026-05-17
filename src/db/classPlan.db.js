@@ -50,17 +50,24 @@ async function resolveClassIdFromSection(sectionId) {
 export async function seedClassPlanFromMaster({
   board,
   subject,
-  classId,
-  academicYear,
+  className,
   campusId,
   teacherId,
   isPublished = false,
 }) {
-  const masterPlan = await prisma.masterLessonPlan.findUnique({
-    where: { className_subject_board_academicYear: { className: classId, subject, board, academicYear } },
-  });
+  const [masterPlan, classRecord] = await Promise.all([
+    prisma.masterLessonPlan.findFirst({
+      where: { className, subject, board },
+      orderBy: { academicYear: "desc" },
+    }),
+    prisma.class.findFirst({
+      where: { class_name: className, campus_id: campusId },
+      select: { class_id: true },
+    }),
+  ]);
 
-  if (!masterPlan) return { ok: false, message: "No master lesson plan found for the given board, subject, class, and academic year" };
+  if (!masterPlan) return { ok: false, message: "No master lesson plan found for the given board, subject, and class" };
+  if (!classRecord) return { ok: false, message: "No class found with the given class name on this campus" };
 
   const details = Array.isArray(masterPlan.details) ? masterPlan.details : [];
   const topicRows = [];
@@ -83,9 +90,9 @@ export async function seedClassPlanFromMaster({
       masterPlanId: masterPlan.id,
       campusId,
       teacherId,
-      classId,
+      classId: classRecord.class_id,
       subject,
-      academicYear,
+      academicYear: masterPlan.academicYear,
       isPublished,
       topics: topicRows.length ? { create: topicRows } : undefined,
     },

@@ -83,6 +83,7 @@ export async function getTeacherPermissions(teacher_id) {
           select: {
             campus_id: true,
             campus_name: true,
+            campus_type:true,
             extras: true,
           },
         },
@@ -191,6 +192,7 @@ export async function getTeacherPermissions(teacher_id) {
     const campus = {
       campus_id: teacher.campus.campus_id,
       campus_name: teacher.campus.campus_name,
+      campus_type: teacher.campus.campus_type,
       term_start_date: teacher.campus.extras?.term_start_date || null,
       term_end_date: teacher.campus.extras?.term_end_date || null,
       campus_exam_types: teacher.campus.extras?.campus_exam_types || null,
