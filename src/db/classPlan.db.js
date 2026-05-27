@@ -152,7 +152,7 @@ export async function listClassPlans({
 
   const where = {};
   if (campusId) where.campusId = campusId;
-  if (teacherId) where.teacherId = teacherId;
+  // if (teacherId) where.teacherId = teacherId;
   if (classId) where.classId = classId;
   if (subject) where.subject = subject;
   if (academicYear) where.academicYear = academicYear;
