@@ -11,6 +11,7 @@ import reportDashboardConfigRoutes from "./reportDashboardConfig.routes.js";
 import endUserRoutes from "./enduser.routes.js";
 import campusTierPermissionRoutes from "./campusTierPermission.routes.js";
 import admissionRoutes from "./admission.routes.js";
+import studentReportRoutes from "./studentReport.routes.js";
 
 export {
     authRoutes,
@@ -26,4 +27,5 @@ export {
     endUserRoutes,
     campusTierPermissionRoutes,
     admissionRoutes,
+    studentReportRoutes,
 }
