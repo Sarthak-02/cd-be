@@ -81,6 +81,22 @@ export async function resolveRecipientsForBroadcast(broadcastId, campusId) {
     );
   }
 
+  // 5️⃣ GROUP targets
+  const groupIds = targets
+    .filter(t => t.targetType === "GROUP")
+    .map(t => t.targetId);
+
+  if (groupIds.length) {
+    const members = await prisma.studentGroupMember.findMany({
+      where: { groupId: { in: groupIds } },
+      select: { studentId: true, groupId: true },
+    });
+
+    members.forEach(m =>
+      addReceiver(m.studentId, "GROUP", m.groupId)
+    );
+  }
+
   return Array.from(receiverMap.values());
 }
 

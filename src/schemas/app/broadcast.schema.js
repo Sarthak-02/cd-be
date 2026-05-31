@@ -21,7 +21,7 @@ export const BroadcastCreateRequestSchema = {
                 items: {
                     type: "object",
                     properties: {
-                        targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT"] },
+                        targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT", "GROUP"] },
                         targetId: { type: "string" },
                     }
                 }
@@ -163,7 +163,7 @@ export const BroadcastUpdateSchema = {
                 items: {
                     type: "object",
                     properties: {
-                        targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT"] },
+                        targetType: { type: "string", enum: ["CAMPUS", "CLASS", "SECTION", "STUDENT", "GROUP"] },
                         targetId: { type: "string" },
                     }
                 }

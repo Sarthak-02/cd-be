@@ -71,6 +71,7 @@ enum TargetType {
   SECTION
   STUDENT
   TEACHER
+  GROUP
 }
 
 enum NotificationSourceType {
@@ -216,6 +217,7 @@ model Campus {
   classPlans  ClassPlan[]
   campusTierPermissions CampusTierPermission[]
   admissions Admission[]
+  studentGroups StudentGroup[]
 
   @@index([school_id])
 }
@@ -301,6 +303,7 @@ model Student {
   authorizedPickupPersons AuthorizedPickupPerson[]
   pickupRequests          PickupRequest[]
   pickupLogs              PickupLog[]
+  groupMemberships        StudentGroupMember[]
 
   @@index([campus_id])
   @@index([student_current_status])
@@ -355,6 +358,7 @@ model Teacher {
   lessonPlans        LessonPlan[]
   classPlans         ClassPlan[]
   pickupLogs         PickupLog[]
+  studentGroups      StudentGroup[]
 
   @@index([campus_id])
 }
@@ -606,6 +610,7 @@ enum ExamTargetType {
   SECTION
   SCHOOL
   CLASS
+  GROUP
 }
 
 model Exam {
@@ -1150,5 +1155,41 @@ model PickupLog {
 
   @@index([studentId, pickedUpAt])
   @@index([confirmedBy])
+  @@index([studentId])
+}
+
+// ─── Student Groups ───────────────────────────────────────────────────────────
+
+model StudentGroup {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  campusId String
+  campus   Campus @relation(fields: [campusId], references: [campus_id], onDelete: Cascade)
+
+  createdBy String
+  teacher   Teacher @relation(fields: [createdBy], references: [teacher_id])
+
+  members StudentGroupMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campusId])
+  @@index([createdBy])
+}
+
+model StudentGroupMember {
+  groupId   String
+  studentId String
+
+  group   StudentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student      @relation(fields: [studentId], references: [student_id], onDelete: Cascade)
+
+  addedAt DateTime @default(now())
+
+  @@id([groupId, studentId])
+  @@index([groupId])
   @@index([studentId])
 }

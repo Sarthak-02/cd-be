@@ -339,28 +339,28 @@ export async function getExamsForStudent({
     offset = 0
 }) {
     try {
-        // First, get the student's section and school
-        const student = await prisma.student.findUnique({
-            where: { student_id: studentId },
-            select: {
-                student_section_id: true,
-                campus_id: true,
-                campus: {
-                    select: {
-                        school_id: true
-                    }
+        // Get student info and group memberships in parallel
+        const [student, groupMemberships] = await Promise.all([
+            prisma.student.findUnique({
+                where: { student_id: studentId },
+                select: {
+                    student_section_id: true,
+                    campus_id: true,
+                    campus: { select: { school_id: true } },
+                    section: { select: { class_id: true } },
                 },
-                section: {
-                    select: {
-                        class_id: true
-                    }
-                }
-            }
-        });
+            }),
+            prisma.studentGroupMember.findMany({
+                where: { studentId },
+                select: { groupId: true },
+            }),
+        ]);
 
         if (!student) {
             return [];
         }
+
+        const groupIds = groupMemberships.map((m) => m.groupId);
 
         const whereClause = {
             status,
@@ -368,44 +368,29 @@ export async function getExamsForStudent({
                 // Direct student target
                 {
                     target: "STUDENT",
-                    targets: {
-                        some: {
-                            targetType: "STUDENT",
-                            targetId: studentId
-                        }
-                    }
+                    targets: { some: { targetType: "STUDENT", targetId: studentId } },
                 },
                 // Section target
                 {
                     target: "SECTION",
-                    targets: {
-                        some: {
-                            targetType: "SECTION",
-                            targetId: student.student_section_id
-                        }
-                    }
+                    targets: { some: { targetType: "SECTION", targetId: student.student_section_id } },
                 },
                 // Class target
                 ...(student.section?.class_id ? [{
                     target: "CLASS",
-                    targets: {
-                        some: {
-                            targetType: "CLASS",
-                            targetId: student.section.class_id
-                        }
-                    }
+                    targets: { some: { targetType: "CLASS", targetId: student.section.class_id } },
                 }] : []),
                 // School target
                 {
                     target: "SCHOOL",
-                    targets: {
-                        some: {
-                            targetType: "SCHOOL",
-                            targetId: student.campus.school_id
-                        }
-                    }
-                }
-            ]
+                    targets: { some: { targetType: "SCHOOL", targetId: student.campus.school_id } },
+                },
+                // Group targets
+                ...groupIds.map((gid) => ({
+                    target: "GROUP",
+                    targets: { some: { targetType: "GROUP", targetId: gid } },
+                })),
+            ],
         };
 
         if (startDate || endDate) {
@@ -1069,28 +1054,28 @@ async function isStudentEligibleForExam(examId, studentId) {
             return false;
         }
 
-        // Get student details
-        const student = await prisma.student.findUnique({
-            where: { student_id: studentId },
-            select: {
-                student_id: true,
-                student_section_id: true,
-                campus: {
-                    select: {
-                        school_id: true
-                    }
+        // Get student details and group memberships in parallel
+        const [student, groupMemberships] = await Promise.all([
+            prisma.student.findUnique({
+                where: { student_id: studentId },
+                select: {
+                    student_id: true,
+                    student_section_id: true,
+                    campus: { select: { school_id: true } },
+                    section: { select: { class_id: true } },
                 },
-                section: {
-                    select: {
-                        class_id: true
-                    }
-                }
-            }
-        });
+            }),
+            prisma.studentGroupMember.findMany({
+                where: { studentId },
+                select: { groupId: true },
+            }),
+        ]);
 
         if (!student) {
             return false;
         }
+
+        const studentGroupIds = new Set(groupMemberships.map((m) => m.groupId));
 
         // Check if student is in any of the exam targets
         for (const target of exam.targets) {
@@ -1104,6 +1089,9 @@ async function isStudentEligibleForExam(examId, studentId) {
                 return true;
             }
             if (target.targetType === "SCHOOL" && target.targetId === student.campus.school_id) {
+                return true;
+            }
+            if (target.targetType === "GROUP" && studentGroupIds.has(target.targetId)) {
                 return true;
             }
         }
@@ -1268,6 +1256,12 @@ export async function getStudentsForExam(examId) {
                     });
                     students.forEach(s => studentIds.add(s.student_id));
                 }
+            } else if (target.targetType === "GROUP") {
+                const members = await prisma.studentGroupMember.findMany({
+                    where: { groupId: target.targetId },
+                    select: { studentId: true },
+                });
+                members.forEach(m => studentIds.add(m.studentId));
             }
         }
 

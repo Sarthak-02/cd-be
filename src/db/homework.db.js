@@ -4,11 +4,13 @@ async function batchResolveTargetNames(targets) {
     const classIds = [...new Set(targets.filter(t => t.targetType === 'CLASS').map(t => t.targetId))];
     const sectionIds = [...new Set(targets.filter(t => t.targetType === 'SECTION').map(t => t.targetId))];
     const studentIds = [...new Set(targets.filter(t => t.targetType === 'STUDENT').map(t => t.targetId))];
+    const groupIds = [...new Set(targets.filter(t => t.targetType === 'GROUP').map(t => t.targetId))];
 
-    const [classes, sections, students] = await Promise.all([
+    const [classes, sections, students, groups] = await Promise.all([
         classIds.length ? prisma.class.findMany({ where: { class_id: { in: classIds } }, select: { class_id: true, class_name: true } }) : [],
         sectionIds.length ? prisma.section.findMany({ where: { section_id: { in: sectionIds } }, select: { section_id: true, section_name: true } }) : [],
         studentIds.length ? prisma.student.findMany({ where: { student_id: { in: studentIds } }, select: { student_id: true, student_first_name: true, student_middle_name: true, student_last_name: true } }) : [],
+        groupIds.length ? prisma.studentGroup.findMany({ where: { id: { in: groupIds } }, select: { id: true, name: true } }) : [],
     ]);
 
     const map = new Map();
@@ -17,6 +19,7 @@ async function batchResolveTargetNames(targets) {
     for (const s of students) {
         map.set(`STUDENT:${s.student_id}`, [s.student_first_name, s.student_middle_name, s.student_last_name].filter(Boolean).join(' ') || null);
     }
+    for (const g of groups) map.set(`GROUP:${g.id}`, g.name);
     return map;
 }
 
@@ -308,34 +311,37 @@ export async function getHomeworkForStudent({
     offset = 0
 }) {
     try {
-        // First, get the student's section
-        const student = await prisma.student.findUnique({
-            where: { student_id: studentId },
-            select: {
-                student_section_id: true,
-                section: {
-                    select: {
-                        class_id: true
-                    }
-                }
-            }
-        });
+        // Get student's section and group memberships in parallel
+        const [student, groupMemberships] = await Promise.all([
+            prisma.student.findUnique({
+                where: { student_id: studentId },
+                select: {
+                    student_section_id: true,
+                    section: { select: { class_id: true } },
+                },
+            }),
+            prisma.studentGroupMember.findMany({
+                where: { studentId },
+                select: { groupId: true },
+            }),
+        ]);
 
         if (!student) {
             return [];
         }
 
+        const groupIds = groupMemberships.map((m) => m.groupId);
+
+        const orConditions = [
+            { targetType: "STUDENT", targetId: studentId },
+            { targetType: "SECTION", targetId: student.student_section_id },
+            { targetType: "CLASS", targetId: student.section?.class_id },
+            ...groupIds.map((gid) => ({ targetType: "GROUP", targetId: gid })),
+        ].filter((c) => c.targetId);
+
         const whereClause = {
             status,
-            targets: {
-                some: {
-                    OR: [
-                        { targetType: "STUDENT", targetId: studentId },
-                        { targetType: "SECTION", targetId: student.student_section_id },
-                        { targetType: "CLASS", targetId: student.section.class_id }
-                    ]
-                }
-            }
+            targets: { some: { OR: orConditions } },
         };
 
         if (startDate || endDate) {

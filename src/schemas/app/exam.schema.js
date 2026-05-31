@@ -11,7 +11,7 @@ export const ExamCreateSchema = {
             },
             target: {
                 type: "string",
-                enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL"],
+                enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL", "GROUP"],
                 description: "Target level of the exam"
             },
             grading_type: {
@@ -73,12 +73,12 @@ export const ExamCreateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL"],
+                            enum: ["CLASS", "STUDENT", "SECTION", "SCHOOL", "GROUP"],
                             description: "Type of target"
                         },
                         targetId: {
                             type: "string",
-                            description: "ID of the target (student_id, section_id, or school_id)"
+                            description: "ID of the target (student_id, section_id, school_id, or group_id)"
                         }
                     }
                 },
@@ -198,7 +198,7 @@ export const ExamGetByTargetSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["STUDENT", "SECTION", "SCHOOL"],
+                enum: ["STUDENT", "SECTION", "SCHOOL", "GROUP"],
                 description: "Type of target"
             },
             target_id: {
@@ -297,7 +297,7 @@ export const ExamUpdateSchema = {
             },
             target: {
                 type: "string",
-                enum: ["CLASS","STUDENT", "SECTION", "SCHOOL"],
+                enum: ["CLASS","STUDENT", "SECTION", "SCHOOL", "GROUP"],
                 description: "Target level of the exam"
             },
             grading_type: {
@@ -349,12 +349,12 @@ export const ExamUpdateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["CLASS","STUDENT", "SECTION", "SCHOOL"],
+                            enum: ["CLASS","STUDENT", "SECTION", "SCHOOL", "GROUP"],
                             description: "Type of target"
                         },
                         targetId: {
                             type: "string",
-                            description: "ID of the target (student_id, section_id, or school_id)"
+                            description: "ID of the target (student_id, section_id, school_id, or group_id)"
                         }
                     }
                 },
@@ -548,7 +548,7 @@ export const ExamAddTargetsSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["STUDENT", "SECTION", "SCHOOL"]
+                            enum: ["STUDENT", "SECTION", "SCHOOL", "GROUP"]
                         },
                         targetId: {
                             type: "string"
@@ -596,7 +596,7 @@ export const ExamGetUpcomingSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["STUDENT", "SECTION", "SCHOOL"],
+                enum: ["STUDENT", "SECTION", "SCHOOL", "GROUP"],
                 description: "Type of target"
             },
             target_id: {
@@ -621,7 +621,7 @@ export const ExamGetOngoingSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["STUDENT", "SECTION", "SCHOOL"],
+                enum: ["STUDENT", "SECTION", "SCHOOL", "GROUP"],
                 description: "Type of target"
             },
             target_id: {

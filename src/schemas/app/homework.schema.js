@@ -50,7 +50,7 @@ export const HomeworkCreateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["CLASS", "SECTION", "STUDENT"],
+                            enum: ["CLASS", "SECTION", "STUDENT","GROUP"],
                             description: "Type of target"
                         },
                         targetId: {
@@ -131,7 +131,7 @@ export const HomeworkGetByTargetSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["CLASS", "SECTION", "STUDENT"],
+                enum: ["CLASS", "SECTION", "STUDENT", "GROUP"],
                 description: "Type of target"
             },
             target_id: {
@@ -255,16 +255,16 @@ export const HomeworkUpdateSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["CLASS", "SECTION", "STUDENT"],
+                            enum: ["CLASS", "SECTION", "STUDENT", "GROUP"],
                             description: "Type of target"
                         },
                         targetId: {
                             type: "string",
-                            description: "ID of the target (class_id, section_id, or student_id)"
+                            description: "ID of the target (class_id, section_id, student_id, or group_id)"
                         }
                     }
                 },
-                description: "List of targets (classes, sections, or students) for this homework"
+                description: "List of targets (classes, sections, students, or groups) for this homework"
             },
             publish: {
                 type: "boolean",
@@ -414,7 +414,7 @@ export const HomeworkAddTargetsSchema = {
                     properties: {
                         targetType: {
                             type: "string",
-                            enum: ["CLASS", "SECTION", "STUDENT"]
+                            enum: ["CLASS", "SECTION", "STUDENT", "GROUP"]
                         },
                         targetId: {
                             type: "string"
@@ -462,7 +462,7 @@ export const HomeworkGetUpcomingSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["CLASS", "SECTION", "STUDENT"],
+                enum: ["CLASS", "SECTION", "STUDENT", "GROUP"],
                 description: "Type of target"
             },
             target_id: {
@@ -487,7 +487,7 @@ export const HomeworkGetOverdueSchema = {
         properties: {
             target_type: {
                 type: "string",
-                enum: ["CLASS", "SECTION", "STUDENT"],
+                enum: ["CLASS", "SECTION", "STUDENT", "GROUP"],
                 description: "Type of target"
             },
             target_id: {
