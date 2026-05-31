@@ -131,6 +131,42 @@ async function resolveStudentsForExam(examId, tx = prisma) {
         students.forEach(s => addStudent(s, "SCHOOL", s.campus.school_id));
     }
 
+    // 4️⃣ GROUP targets
+    const groupTargets = targets.filter(t => t.targetType === "GROUP");
+    if (groupTargets.length > 0) {
+        const groupIds = groupTargets.map(t => t.targetId);
+        const members = await tx.studentGroupMember.findMany({
+            where: { groupId: { in: groupIds } },
+            select: {
+                groupId: true,
+                student: {
+                    select: {
+                        student_id: true,
+                        student_first_name: true,
+                        student_middle_name: true,
+                        student_last_name: true,
+                        student_current_status: true,
+                        parents: {
+                            select: {
+                                parent_id: true,
+                                name: true,
+                                email: true,
+                                phone: true,
+                                relation_type: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        members.forEach(m => {
+            if (m.student && m.student.student_current_status === "active") {
+                addStudent(m.student, "GROUP", m.groupId);
+            }
+        });
+    }
+
     return Array.from(studentMap.values());
 }
 
