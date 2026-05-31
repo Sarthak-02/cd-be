@@ -80,6 +80,20 @@ enum NotificationSourceType {
   HOMEWORK
   EXAM
   SYSTEM
+  PTM
+}
+
+enum PtmSlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
+
+enum PtmBookingStatus {
+  SCHEDULED
+  COMPLETED
+  NO_SHOW
+  CANCELLED
 }
 
 enum NotificationRecipientType {
@@ -304,6 +318,7 @@ model Student {
   pickupRequests          PickupRequest[]
   pickupLogs              PickupLog[]
   groupMemberships        StudentGroupMember[]
+  ptmBookings             PtmBooking[]
 
   @@index([campus_id])
   @@index([student_current_status])
@@ -324,6 +339,8 @@ model Parent {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  ptmBookings PtmBooking[]
 
   @@index([phone_hash])
 }
@@ -359,6 +376,7 @@ model Teacher {
   classPlans         ClassPlan[]
   pickupLogs         PickupLog[]
   studentGroups      StudentGroup[]
+  ptmSlots           PtmSlot[]
 
   @@index([campus_id])
 }
@@ -1192,4 +1210,58 @@ model StudentGroupMember {
   @@id([groupId, studentId])
   @@index([groupId])
   @@index([studentId])
+}
+
+// ─── PTM (Parent-Teacher Meeting) ────────────────────────────────────────────
+
+/// A time slot a teacher makes available for parent meetings
+model PtmSlot {
+  id          String        @id @default(uuid())
+  teacherId   String
+  campusId    String
+  title       String
+  description String?       @db.Text
+  date        DateTime      @db.Date
+  startTime   String        // HH:MM
+  endTime     String        // HH:MM
+  capacity    Int           @default(1)   // max concurrent bookings for this slot
+  status      PtmSlotStatus @default(AVAILABLE)
+  createdBy   String        // teacher_id or admin userid
+
+  teacher   Teacher      @relation(fields: [teacherId], references: [teacher_id])
+  bookings  PtmBooking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId, date])
+  @@index([campusId, date, status])
+  @@index([date, status])
+}
+
+/// A parent's booking of a PTM slot for their child
+model PtmBooking {
+  id           String           @id @default(uuid())
+  ptmSlotId    String
+  studentId    String
+  parentId     String?          // parent_id from Parent model (optional — walk-in)
+  status       PtmBookingStatus @default(SCHEDULED)
+  teacherNotes String?          @db.Text // private; never sent to parent
+
+  bookedAt    DateTime  @default(now())
+  completedAt DateTime?
+
+  ptmSlot PtmSlot @relation(fields: [ptmSlotId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [student_id])
+  parent  Parent? @relation(fields: [parentId], references: [parent_id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ptmSlotId, studentId]) // one booking per student per slot
+  @@index([ptmSlotId])
+  @@index([studentId])
+  @@index([parentId])
+  @@index([status])
+  @@index([studentId, status])
 }

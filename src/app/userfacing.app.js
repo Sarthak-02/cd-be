@@ -21,6 +21,7 @@ import classPlanRoutes from '../routes/app/classPlan.route.js'
 import pickupRoutes from '../routes/app/pickup.route.js'
 import reportDashboardConfigRoutes from '../routes/app/reportDashboardConfig.route.js'
 import studentGroupRoutes from '../routes/app/studentGroup.route.js'
+import ptmRoutes from '../routes/app/ptm.route.js'
 
 
 dotenv.config()
@@ -51,6 +52,7 @@ export async function buildUserfacingServer() {
       await appRoutes.register(pickupRoutes)
       await appRoutes.register(reportDashboardConfigRoutes)
       await appRoutes.register(studentGroupRoutes)
+      await appRoutes.register(ptmRoutes)
 
     }, { prefix: '/userfacing' })
   
