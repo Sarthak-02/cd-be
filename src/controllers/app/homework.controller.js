@@ -711,8 +711,9 @@ export async function generate_attachment_upload_url(req, reply) {
             success: true,
             message: "Signed URL generated successfully",
             data: {
-                homeworkId: homework_id,  // Return the homework_id (temp or provided)
+                homeworkId: homework_id,
                 uploadUrl: result.uploadUrl,
+                downloadUrl: result.downloadUrl,
                 publicUrl: result.publicUrl,
                 objectPath: result.objectPath
             }

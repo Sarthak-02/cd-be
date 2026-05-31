@@ -370,13 +370,14 @@ export async function delete_topic_material(req, reply) {
 export async function add_topic_assignment(req, reply) {
   try {
     const { progress_id } = req.params;
-    const { title, due_date, file_url, status } = req.body;
+    const { title, due_date, file_url, status, content } = req.body;
 
     const assignment = await addTopicAssignment(progress_id, {
       title,
       dueDate: due_date,
       fileUrl: file_url,
       status,
+      content,
     });
 
     reply.code(201).send({ success: true, message: "Assignment added", data: assignment });
@@ -399,6 +400,7 @@ export async function update_topic_assignment(req, reply) {
     if (body.due_date !== undefined) patch.dueDate = body.due_date;
     if (body.file_url !== undefined) patch.fileUrl = body.file_url;
     if (body.status !== undefined) patch.status = body.status;
+    if (body.content !== undefined) patch.content = body.content;
 
     const assignment = await updateTopicAssignment(assignment_id, patch);
 
@@ -429,12 +431,13 @@ export async function delete_topic_assignment(req, reply) {
 export async function add_topic_quiz(req, reply) {
   try {
     const { progress_id } = req.params;
-    const { title, generated_by_ai, file_url } = req.body;
+    const { title, generated_by_ai, file_url, content } = req.body;
 
     const quiz = await addTopicQuiz(progress_id, {
       title,
       generatedByAi: generated_by_ai ?? false,
       fileUrl: file_url,
+      content,
     });
 
     reply.code(201).send({ success: true, message: "Quiz added", data: quiz });
@@ -456,6 +459,7 @@ export async function update_topic_quiz(req, reply) {
     if (body.title !== undefined) patch.title = body.title;
     if (body.generated_by_ai !== undefined) patch.generatedByAi = body.generated_by_ai;
     if (body.file_url !== undefined) patch.fileUrl = body.file_url;
+    if (body.content !== undefined) patch.content = body.content;
 
     const quiz = await updateTopicQuiz(quiz_id, patch);
 

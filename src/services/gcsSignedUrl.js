@@ -96,14 +96,21 @@ export async function generateDocumentUploadSignedUrl({
   const [uploadUrl] = await file.getSignedUrl({
     version: "v4",
     action: "write",
-    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    expires: Date.now() + 15 * 60 * 1000,
     contentType: mimeType,
+  });
+
+  const [downloadUrl] = await file.getSignedUrl({
+    version: "v4",
+    action: "read",
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
   const publicUrl = `https://storage.googleapis.com/${DOCUMENT_BUCKET_NAME}/${objectPath}`;
 
   return {
     uploadUrl,
+    downloadUrl,
     objectPath,
     publicUrl,
   };

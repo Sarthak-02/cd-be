@@ -933,10 +933,11 @@ model TopicAssignment {
   progressId String
   progress   ClassPlanTopicProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
 
-  title   String
-  dueDate DateTime?             @db.Date
-  fileUrl String?
-  status  TopicAssignmentStatus @default(DRAFT)
+  title       String
+  dueDate     DateTime?             @db.Date
+  fileUrl     String?
+  status      TopicAssignmentStatus @default(DRAFT)
+  content     Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -952,6 +953,7 @@ model TopicQuiz {
   title         String
   generatedByAi Boolean @default(false)
   fileUrl       String?
+  content       Json?
 
   createdAt DateTime @default(now())
 

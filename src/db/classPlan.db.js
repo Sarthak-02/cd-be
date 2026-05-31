@@ -318,7 +318,7 @@ export async function deleteTopicMaterial(materialId) {
 
 // ─── Assignments ──────────────────────────────────────────────────────────────
 
-export async function addTopicAssignment(progressId, { title, dueDate, fileUrl, status = "DRAFT" }) {
+export async function addTopicAssignment(progressId, { title, dueDate, fileUrl, status = "DRAFT", content }) {
   return prisma.topicAssignment.create({
     data: {
       progressId,
@@ -326,6 +326,7 @@ export async function addTopicAssignment(progressId, { title, dueDate, fileUrl, 
       dueDate: dueDate ? new Date(dueDate) : null,
       fileUrl: fileUrl ?? null,
       status,
+      content: content ?? null,
     },
   });
 }
@@ -336,6 +337,7 @@ export async function updateTopicAssignment(assignmentId, patch) {
   if (patch.dueDate !== undefined) data.dueDate = patch.dueDate ? new Date(patch.dueDate) : null;
   if (patch.fileUrl !== undefined) data.fileUrl = patch.fileUrl;
   if (patch.status !== undefined) data.status = patch.status;
+  if (patch.content !== undefined) data.content = patch.content;
 
   try {
     return await prisma.topicAssignment.update({ where: { id: assignmentId }, data });
@@ -357,9 +359,9 @@ export async function deleteTopicAssignment(assignmentId) {
 
 // ─── Quizzes ──────────────────────────────────────────────────────────────────
 
-export async function addTopicQuiz(progressId, { title, generatedByAi = false, fileUrl }) {
+export async function addTopicQuiz(progressId, { title, generatedByAi = false, fileUrl, content }) {
   return prisma.topicQuiz.create({
-    data: { progressId, title, generatedByAi, fileUrl: fileUrl ?? null },
+    data: { progressId, title, generatedByAi, fileUrl: fileUrl ?? null, content: content ?? null },
   });
 }
 
@@ -368,6 +370,7 @@ export async function updateTopicQuiz(quizId, patch) {
   if (patch.title !== undefined) data.title = patch.title;
   if (patch.generatedByAi !== undefined) data.generatedByAi = patch.generatedByAi;
   if (patch.fileUrl !== undefined) data.fileUrl = patch.fileUrl;
+  if (patch.content !== undefined) data.content = patch.content;
 
   try {
     return await prisma.topicQuiz.update({ where: { id: quizId }, data });

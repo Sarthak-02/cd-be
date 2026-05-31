@@ -259,6 +259,7 @@ export const TopicAssignmentAddSchema = {
       due_date: { type: "string", format: "date" },
       file_url: { type: "string" },
       status: { type: "string", enum: assignmentStatusEnum, default: "DRAFT" },
+      content: { type: "object" },
     },
   },
 };
@@ -278,6 +279,7 @@ export const TopicAssignmentUpdateSchema = {
       due_date: { type: ["string", "null"], format: "date" },
       file_url: { type: ["string", "null"] },
       status: { type: "string", enum: assignmentStatusEnum },
+      content: { type: ["object", "null"] },
     },
   },
 };
@@ -303,6 +305,7 @@ export const TopicQuizAddSchema = {
       title: { type: "string", minLength: 1 },
       generated_by_ai: { type: "boolean", default: false },
       file_url: { type: "string" },
+      content: { type: "object" },
     },
   },
 };
@@ -321,6 +324,7 @@ export const TopicQuizUpdateSchema = {
       title: { type: "string", minLength: 1 },
       generated_by_ai: { type: "boolean" },
       file_url: { type: ["string", "null"] },
+      content: { type: ["object", "null"] },
     },
   },
 };
