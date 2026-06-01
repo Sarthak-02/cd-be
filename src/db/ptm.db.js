@@ -38,7 +38,7 @@ export async function createPtmSlot({ teacherId, campusId, title, description, d
                     _count: { select: { bookings: true } }
                 }
             })
-        })
+        }, { timeout: 30000 })
     }
 
     return prisma.ptmSlot.create({
@@ -228,27 +228,29 @@ export async function createPtmBookings({ ptmSlotId, bookings }) {
                 throw new Error(`Student(s) already booked for this slot: ${duplicates}`)
             }
 
-            const created = await Promise.all(
-                bookings.map(({ studentId, parentId }) =>
-                    tx.ptmBooking.create({
-                        data: { ptmSlotId, studentId, parentId: parentId ?? null, status: "SCHEDULED" },
-                        include: {
-                            ptmSlot: {
-                                include: { teacher: { select: { teacher_id: true, teacher_first_name: true, teacher_last_name: true } } }
-                            },
-                            student: { select: { student_id: true, student_first_name: true, student_last_name: true } },
-                            parent: { select: { parent_id: true, name: true, relation_type: true } }
-                        }
-                    })
-                )
-            )
+            // Sequential — Promise.all inside an interactive tx shares one connection and times out
+            const created = []
+            for (const { studentId, parentId } of bookings) {
+                const booking = await tx.ptmBooking.create({
+                    data: { ptmSlotId, studentId, parentId: parentId ?? null, status: "SCHEDULED" },
+                    include: {
+                        ptmSlot: {
+                            include: { teacher: { select: { teacher_id: true, teacher_first_name: true, teacher_last_name: true } } }
+                        },
+                        student: { select: { student_id: true, student_first_name: true, student_last_name: true } },
+                        parent: { select: { parent_id: true, name: true, relation_type: true } }
+                    }
+                })
+                created.push(booking)
+            }
 
             if (activeCount + bookings.length >= slot.capacity) {
                 await tx.ptmSlot.update({ where: { id: ptmSlotId }, data: { status: "BOOKED" } })
             }
 
             return created
-        })
+        // 30 s — each create passes through the PII encryption extension, so budget generously
+        }, { timeout: 30000 })
     } catch (err) {
         // Prisma unique constraint violation — belt-and-suspenders catch
         if (err.code === "P2002" && err.meta?.target?.includes("studentId")) {
@@ -368,7 +370,7 @@ export async function cancelPtmBooking(bookingId) {
         }
 
         return cancelled
-    })
+    }, { timeout: 30000 })
 }
 
 export async function updatePtmNotes({ bookingId, teacherNotes }) {
