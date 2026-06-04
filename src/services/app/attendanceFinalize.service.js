@@ -12,13 +12,15 @@ export async function finalizeAttendanceAndNotify({ sessionId, triggeredByTeache
         });
 
         if (!s) throw new Error("Attendance session not found");
-        if (s.status !== "DRAFT") throw new Error("Session is not in DRAFT state");
+        if (s.status !== "DRAFT" && s.status !== "NOTIFYING") throw new Error("Session is not in a finalizable state");
         if (s.teacherId !== triggeredByTeacherId) throw new Error("Not allowed to finalize this session");
 
-        await tx.attendanceSession.update({
-            where: { id: sessionId },
-            data: { status: "NOTIFYING" },
-        });
+        if (s.status === "DRAFT") {
+            await tx.attendanceSession.update({
+                where: { id: sessionId },
+                data: { status: "NOTIFYING" },
+            });
+        }
 
         return s;
     });

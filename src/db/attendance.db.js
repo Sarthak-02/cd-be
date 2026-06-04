@@ -134,7 +134,8 @@ export async function upsertAttendanceRecord({
             create: {
                 attendanceSessionId,
                 studentId,
-                status
+                status,
+                updatedBy,
             },
         });
     } catch (err) {
@@ -192,6 +193,14 @@ export async function submitAttendanceSession(sessionId) {
 }
 
 export async function lockAttendanceSession(sessionId) {
+    const session = await prisma.attendanceSession.findUnique({
+        where: { id: sessionId },
+        select: { status: true },
+    });
+
+    if (!session) throw new Error("Attendance session not found");
+    if (session.status !== "SUBMITTED") throw new Error("Session must be SUBMITTED before it can be locked");
+
     try {
         return await prisma.attendanceSession.update({
             where: { id: sessionId },
@@ -349,6 +358,8 @@ export async function getStudentAttendanceBySection({
                 status: true,
                 attendanceSession: {
                     select: {
+                        date: true,
+                        campusSession: true,
                         period: true,
                         submittedAt: true,
                         teacher: {

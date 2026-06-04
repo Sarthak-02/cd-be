@@ -132,8 +132,7 @@ export async function editAttendance({ session_id, teacher_id, records }) {
  * @returns {Array} Today's schedule entries with timing details
  */
 export function getTodayEntries(data) {
-  let todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  todayLabel = 'Monday'
+  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   console.log("todayLabel",todayLabel);
   // find today's day object
   const todayDay = data.days.find(day => day.label === todayLabel && day.isActive);
