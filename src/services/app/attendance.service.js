@@ -28,9 +28,16 @@ export async function markAttendance({
     sessionId,
     student_id,
     status,
+    half_day_type,
     teacher_id,
 }) {
-    // 🔐 Business rule: session must be editable
+    if (status === "HALF_DAY" && !half_day_type) {
+        throw new Error("half_day_type is required when status is HALF_DAY");
+    }
+    if (status !== "HALF_DAY" && half_day_type) {
+        throw new Error("half_day_type is only valid when status is HALF_DAY");
+    }
+
     const session = await prisma.attendanceSession.findUnique({
         where: { id: sessionId },
         select: { status: true },
@@ -46,6 +53,7 @@ export async function markAttendance({
         attendanceSessionId: sessionId,
         studentId: student_id,
         status,
+        halfDayType: half_day_type ?? null,
         updatedBy: teacher_id,
     });
 }
@@ -96,6 +104,15 @@ export async function bulkCreateAttendance({
         throw new Error("Bulk create allowed only in DRAFT sessions");
       }
 
+      for (const record of records) {
+        if (record.status === "HALF_DAY" && !record.half_day_type) {
+          throw new Error(`half_day_type is required for HALF_DAY status (student: ${record.student_id})`);
+        }
+        if (record.status !== "HALF_DAY" && record.half_day_type) {
+          throw new Error(`half_day_type is only valid for HALF_DAY status (student: ${record.student_id})`);
+        }
+      }
+
       return await bulkUpsertAttendanceRecords(
         {
           attendanceSessionId: attendanceSession.id,
@@ -116,6 +133,15 @@ export async function editAttendance({ session_id, teacher_id, records }) {
 
         if (!session) throw new Error("Attendance session not found");
         if (session.status === "LOCKED") throw new Error("Cannot edit a locked attendance session");
+
+        for (const record of records) {
+            if (record.status === "HALF_DAY" && !record.half_day_type) {
+                throw new Error(`half_day_type is required for HALF_DAY status (student: ${record.student_id})`);
+            }
+            if (record.status !== "HALF_DAY" && record.half_day_type) {
+                throw new Error(`half_day_type is only valid for HALF_DAY status (student: ${record.student_id})`);
+            }
+        }
 
         await bulkUpsertAttendanceRecords(
             { attendanceSessionId: session_id, records, updatedBy: teacher_id },

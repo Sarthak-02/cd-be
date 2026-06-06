@@ -145,6 +145,7 @@ export async function get_attendance_details(req, reply) {
                 roll_number: record.student.student_roll_no,
                 admission_number: record.student.student_admission_no,
                 attendance_status: record.status,
+                half_day_type: record.halfDayType ?? null,
                 attendanceRecordId: record.id
             }))
         };
@@ -194,10 +195,11 @@ export async function get_student_attendance(req, reply) {
             absent: attendanceRecords.filter(r => r.status === "ABSENT").length,
             late: attendanceRecords.filter(r => r.status === "LATE").length,
             excused: attendanceRecords.filter(r => r.status === "EXCUSED").length,
+            half_day: attendanceRecords.filter(r => r.status === "HALF_DAY").length,
         };
 
-        summary.attendance_percentage = summary.total > 0 
-            ? ((summary.present + summary.late) / summary.total * 100).toFixed(2) 
+        summary.attendance_percentage = summary.total > 0
+            ? ((summary.present + summary.late + summary.half_day * 0.5) / summary.total * 100).toFixed(2)
             : 0;
 
         reply.send({ 

@@ -36,6 +36,12 @@ enum AttendanceStatus {
   ABSENT
   LATE
   EXCUSED
+  HALF_DAY
+}
+
+enum HalfDayType {
+  FIRST
+  SECOND
 }
 
 enum CampusSession {
@@ -413,7 +419,8 @@ model AttendanceRecord {
   attendanceSessionId String
   studentId           String
 
-  status AttendanceStatus
+  status      AttendanceStatus
+  halfDayType HalfDayType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

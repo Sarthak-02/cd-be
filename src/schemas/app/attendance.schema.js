@@ -20,7 +20,11 @@ export const AttendanceBulkCreateRequestSchema = {
             },
             status: {
               type: "string",
-              enum: ["PRESENT", "ABSENT", "LATE","EXCUSED"]
+              enum: ["PRESENT", "ABSENT", "LATE", "EXCUSED", "HALF_DAY"]
+            },
+            half_day_type: {
+              type: "string",
+              enum: ["FIRST", "SECOND"]
             }
           },
           additionalProperties: false
@@ -104,7 +108,11 @@ export const AttendanceEditRequestSchema = {
             student_id: { type: "string" },
             status: {
               type: "string",
-              enum: ["PRESENT", "ABSENT", "LATE", "EXCUSED"]
+              enum: ["PRESENT", "ABSENT", "LATE", "EXCUSED", "HALF_DAY"]
+            },
+            half_day_type: {
+              type: "string",
+              enum: ["FIRST", "SECOND"]
             }
           },
           additionalProperties: false

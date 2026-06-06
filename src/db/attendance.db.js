@@ -10,15 +10,16 @@ export async function bulkUpsertAttendanceRecords({
     if (!records?.length) return attendanceSessionId;
     try {
       const now = new Date();
-      const values = records.map(({ student_id, status }) =>
-        Prisma.sql`(${randomUUID()}, ${attendanceSessionId}, ${student_id}, ${status}::"AttendanceStatus", ${now}, ${now}, ${updatedBy ?? null})`
+      const values = records.map(({ student_id, status, half_day_type }) =>
+        Prisma.sql`(${randomUUID()}, ${attendanceSessionId}, ${student_id}, ${status}::"AttendanceStatus", ${half_day_type ?? null}::"HalfDayType", ${now}, ${now}, ${updatedBy ?? null})`
       );
       await tx.$executeRaw`
-        INSERT INTO "AttendanceRecord" (id, "attendanceSessionId", "studentId", status, "createdAt", "updatedAt", "updatedBy")
+        INSERT INTO "AttendanceRecord" (id, "attendanceSessionId", "studentId", status, "halfDayType", "createdAt", "updatedAt", "updatedBy")
         VALUES ${Prisma.join(values)}
         ON CONFLICT ("attendanceSessionId", "studentId")
         DO UPDATE SET
           status = EXCLUDED.status,
+          "halfDayType" = EXCLUDED."halfDayType",
           "updatedBy" = EXCLUDED."updatedBy",
           "updatedAt" = EXCLUDED."updatedAt"
       `;
@@ -117,6 +118,7 @@ export async function upsertAttendanceRecord({
     attendanceSessionId,
     studentId,
     status,
+    halfDayType,
     updatedBy
 }) {
     try {
@@ -129,12 +131,14 @@ export async function upsertAttendanceRecord({
             },
             update: {
                 status,
+                halfDayType: halfDayType ?? null,
                 updatedBy,
             },
             create: {
                 attendanceSessionId,
                 studentId,
                 status,
+                halfDayType: halfDayType ?? null,
                 updatedBy,
             },
         });
@@ -356,6 +360,7 @@ export async function getStudentAttendanceBySection({
             },
             select: {
                 status: true,
+                halfDayType: true,
                 attendanceSession: {
                     select: {
                         date: true,
