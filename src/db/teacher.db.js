@@ -129,6 +129,7 @@ export async function getTeacherPermissions(teacher_id) {
             student_last_name: true,
             student_roll_no: true,
             student_section_id: true,
+            student_subjects : true
           },
           orderBy: {
             student_roll_no: "asc",
@@ -177,6 +178,7 @@ export async function getTeacherPermissions(teacher_id) {
           .join(" "),
         student_roll_no: student.student_roll_no,
         section_id: student.student_section_id,
+        student_subjects: student.student_subjects
       }))
     );
 

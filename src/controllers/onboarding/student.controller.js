@@ -165,3 +165,4 @@ export async function student_delete(req, reply) {
     return sendPrismaError(reply, err, req);
   }
 }
+

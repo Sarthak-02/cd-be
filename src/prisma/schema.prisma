@@ -304,7 +304,7 @@ model Student {
   student_gender         Gender
   student_dob            String          // encrypted; was DateTime, changed to String
   student_current_status StudentStatus
-
+  student_subjects String[]
   student_section_id String?
   section    Section? @relation(fields: [student_section_id], references: [section_id], onDelete: SetNull)
 
@@ -324,7 +324,7 @@ model Student {
   pickupRequests          PickupRequest[]
   pickupLogs              PickupLog[]
   groupMemberships        StudentGroupMember[]
-  ptmBookings             PtmBooking[]
+  ptmBookings             PtmBooking[]   
 
   @@index([campus_id])
   @@index([student_current_status])
@@ -544,6 +544,7 @@ model Subject {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
 
   @@unique([campus_id, subject_code])
   @@index([campus_id])

@@ -2,7 +2,8 @@ import { prisma } from "../prisma/prisma.js";
 import { getCampusTierPermissionsByRole } from "./campusTierPermission.db.js";
 
 export async function createStudent(data) {
-  return prisma.student.create({ data });
+  const { subject_ids, ...studentData } = data;
+  return prisma.student.create({ data: studentData });
 }
 
 export async function getStudent(student_id) {
@@ -25,10 +26,17 @@ export async function getAllStudents({ omit = {}, where = {} } = {}) {
 }
 
 export async function updateStudent(data) {
-  const { student_id, ...rest } = data;
+  const { student_id, campus_id, student_section_id, subject_ids, ...rest } = data;
   const updates = Object.fromEntries(
     Object.entries(rest).filter(([, v]) => v !== undefined),
   );
+
+  if (student_section_id !== undefined) {
+    updates.section = student_section_id
+      ? { connect: { section_id: student_section_id } }
+      : { disconnect: true };
+  }
+
   if (Object.keys(updates).length === 0) {
     const err = new Error("NO_FIELDS_TO_UPDATE");
     err.code = "NO_FIELDS_TO_UPDATE";
@@ -129,6 +137,7 @@ export async function getStudentPermissions(student_id) {
       campus,
       details,
       section,
+      student_subjects: student.student_subjects ?? [],
       features,
     };
   } catch (err) {

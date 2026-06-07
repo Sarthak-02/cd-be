@@ -24,6 +24,7 @@ export const studentCreateRequestSchema = {
       student_current_status: { type: "string" },
       student_section_id: { type: "string" },
       extras: { type: "object", nullable: true },
+      student_subjects: { type: "array", items: { type: "string" } },
 
       campus_id: { type: "string" },
     },
@@ -49,6 +50,7 @@ export const studentUpdateRequestSchema = {
       student_current_status: { type: "string" },
       student_section_id: { type: "string" },
       extras: { type: "object", nullable: true },
+      student_subjects: { type: "array", items: { type: "string" } },
 
       campus_id: { type: "string" },
     },
@@ -75,3 +77,4 @@ export const studentByCampusGetRequestSchema = {
     },
   },
 };
+
