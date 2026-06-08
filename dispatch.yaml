@@ -25,6 +25,15 @@ dispatch:
   - url: "*/control-desk-web"
     service: control-desk-web
 
+# All /event/igi/* traffic → frontend service
+  - url: "*/event/igi/*"
+    service: event-fe
+  
+  - url: "*/event/igi"
+    service: event-fe
+  # All /bck/event/* traffic → backend service
+  - url: "*/bck/event/*"
+    service: event-be
 
 
   # Optional: Route root and other paths to a default service if needed
