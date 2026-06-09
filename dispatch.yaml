@@ -26,10 +26,10 @@ dispatch:
     service: control-desk-web
 
 # All /event/igi/* traffic → frontend service
-  - url: "*/event/igi/*"
+  - url: "*/event/igic/*"
     service: event-fe
   
-  - url: "*/event/igi"
+  - url: "*/event/igic"
     service: event-fe
   # All /bck/event/* traffic → backend service
   - url: "*/bck/event/*"
